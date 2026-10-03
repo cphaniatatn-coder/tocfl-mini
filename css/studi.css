@@ -1,0 +1,27 @@
+/* Tambahan tampilan modul mini (alur uji coba). */
+.step-card.st-lock { opacity: .55; }
+.step-card.st-cur { outline: 2px solid var(--pri); }
+.step-card.st-done b { color: var(--ok); }
+.section-title small { color: var(--sub); font-weight: 600; margin-left: 6px; }
+.mod-row:disabled { opacity: .55; }
+.mode-card.on { outline: 2px solid var(--pri); }
+.lv-badge { flex: 0 0 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--pri-pale); color: var(--pri-d); font-size: 16px; }
+.lv-card.on .lv-badge { background: var(--pri); color: #fff; }
+.lv-cek { width: 18px; color: var(--pri); }
+
+/* Skala Likert: satu pernyataan per kartu, lima tombol besar (ramah HP) */
+.likert { background: var(--surface); border-radius: var(--r); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.likert.ok { box-shadow: inset 4px 0 0 var(--ok), var(--shadow); }
+.likert p { margin: 0 0 10px; }
+.likert-seg button { min-height: 44px; font-size: 16px; }
+.likert-ends { display: flex; justify-content: space-between; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.likert-legend { margin: 8px 0 0; padding-left: 18px; color: var(--sub); font-size: 13.5px; }
+
+/* Kata pendukung (diajarkan di bab yang tidak ikut uji coba) */
+.kw.pend { background: none; box-shadow: none; border-bottom: 2px dotted var(--muted); border-radius: 0; }
+.pend-list summary { cursor: pointer; }
+.pend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; }
+.pend-w { display: grid; text-align: left; gap: 2px; padding: 10px; background: var(--surface2); border-radius: var(--r-sm); }
+.pend-w b { font-family: var(--kai); font-size: 20px; }
+.pend-w small { color: var(--sub); }
+.pend-w span { font-size: 13px; }
