@@ -26,7 +26,38 @@ const Studi = {
   vol() { return LEVEL_VOL[this.get().level]; },
   mods() { return this.vol() ? App.plan[this.vol()] : []; },
   nDone() { return this.mods().filter(m => App.getP(m.code).done).length; },
-  admin() { return (this.get().profil?.nama || '').toLowerCase() === 'admin'; },   // nama "admin" = mode lihat isi: lewati kuesioner & tes awal, tidak kirim data
+  // Mode admin (tombol Admin di beranda, atau nama "admin"): semua langkah terbuka, data tidak dikirim
+  admin() { const s = this.get(); return !!s.admin || (s.profil?.nama || '').toLowerCase() === 'admin'; },
+  masukAdmin() {
+    if (this.get().profil && !this.admin() && !confirm(T('This device already has participant data. Admin mode will replace it. Continue?', 'Perangkat ini sudah berisi data peserta. Mode admin akan menggantinya. Lanjut?'))) return;
+    Store.set(STUDI_KEY, { admin: true, profil: { nama: 'admin', pernah: 0 }, level: 'A0', mulai: Date.now(), lang: LANG });
+    this.renderHome();
+  },
+  keluarAdmin() {
+    if (!confirm(T('Leave admin mode? All admin answers and unit progress on this device will be deleted.', 'Keluar dari mode admin? Semua jawaban admin dan progres bab di perangkat ini akan dihapus.'))) return;
+    Store.set(STUDI_KEY, {}); Store.set(STORAGE_KEY, {});
+    this.renderHome();
+  },
+  adminSet(k, v) {
+    if (k === 'level') this.set({ level: v });
+    else this.set({ profil: Object.assign({}, this.get().profil, { pernah: v }) });
+    this.renderHome();
+  },
+  adminHapus() {
+    if (!confirm(T('Delete the admin answers (questionnaires, tests, evaluation)?', 'Hapus jawaban admin (kuesioner, tes, evaluasi)?'))) return;
+    this.set({ pre: null, post: null, selesai: null });
+    this.renderHome();
+  },
+  adminPanel() {
+    const s = this.get(), seg = (k, cur, opts) => `<div class="seg wrap">${opts.map(([v, l]) =>
+      `<button class="${cur === v ? 'on' : ''}" onclick="Studi.adminSet('${k}', ${typeof v === 'string' ? `'${v}'` : v})">${l}</button>`).join('')}</div>`;
+    return `<div class="panel admin-panel"><div class="panel-k">${Pic.html('🔧', 'ic-sm')} ${T('Admin mode', 'Mode admin')}</div>
+      <p class="hint">${T('Every step is open in any order. Nothing is sent to the researcher.', 'Semua langkah terbuka, urutan bebas. Tidak ada data yang dikirim ke peneliti.')}</p>
+      <div class="field-k">${T('Level', 'Level')}</div>${seg('level', s.level, [['A0', 'A0'], ['A1', 'A1'], ['A2', 'A2']])}
+      <div class="field-k">${T('Questionnaire version', 'Versi kuesioner')}</div>${seg('pernah', s.profil?.pernah, [[0, T('Has taken TOCFL', 'Pernah ikut TOCFL')], [1, T('Never taken TOCFL', 'Belum pernah')]])}
+      <div class="admin-act"><button class="btn" onclick="Studi.adminHapus()">${T('Clear answers', 'Hapus jawaban')}</button>
+        <button class="btn" onclick="Studi.keluarAdmin()">${T('Leave admin mode', 'Keluar admin')}</button></div></div>`;
+  },
 
   /* Langkah: 0 data diri · 1 kuesioner awal · 2 tes awal · 3 modul · 4 kuesioner akhir · 5 tes akhir · 6 evaluasi · 7 selesai */
   langkah() {
@@ -56,16 +87,17 @@ const Studi = {
   /* ===== Beranda: daftar langkah ===== */
   async renderHome() {
     await this.load();
-    const s = this.get(), L = this.langkah(), mods = this.mods();
+    const s = this.get(), L = this.langkah(), mods = this.mods(), adm = this.admin();
     App.bar('TOCFL Band A', null, `<button class="bar-pill" onclick="Lang.ganti()">${{ id: 'ID', en: 'EN', vi: 'VI' }[LANG]}</button>`);
+    const selesai = [!!s.profil, !!s.pre?.cemas, !!s.pre?.tes, false, !!s.post?.cemas, !!s.post?.tes, !!s.post?.eval];
     const row = (i, ic, judul, sub, href) => {
-      const st = L > i ? 'done' : L === i ? 'cur' : 'lock';
+      const st = adm ? (selesai[i] ? 'done' : 'cur') : L > i ? 'done' : L === i ? 'cur' : 'lock';
       return `<button class="card mode-card step-card st-${st}" ${st === 'lock' ? 'disabled' : `onclick="App.go('${href}')"`}>
         ${Pic.html(st === 'done' ? '✅' : st === 'lock' ? '🔒' : ic, 'mode-ic')}
         <div><b>${judul}</b><span>${sub}</span></div>${st === 'lock' ? '' : '<span class="chev">›</span>'}</button>`;
     };
     const modRows = mods.map(m => {
-      const p = App.getP(m.code), st = p.done ? 'done' : L >= 3 ? 'cur' : 'lock';
+      const p = App.getP(m.code), st = p.done ? 'done' : L >= 3 || adm ? 'cur' : 'lock';
       return `<button class="mod-row st-${p.done ? 'done' : (p.stage || p.tasks) ? 'progress' : 'new'}" ${st === 'lock' ? 'disabled' : `onclick="App.go('#/m/${m.code}/${p.stage || 0}')"`}>
         <span class="mod-code">${m.code}</span>
         <span class="mod-main"><b lang="zh-TW">${esc(m.title)}</b><small>${esc(m.scene)}</small></span>
@@ -77,6 +109,8 @@ const Studi = {
           <p>${s.level ? T(`Trial module · level ${s.level} · 6 units`, `Modul uji coba · level ${s.level} · 6 bab`) : T('Trial module for TOCFL Band A preparation.', 'Modul uji coba persiapan TOCFL Band A.')}</p></div>
         ${App.ring(Math.round(Math.min(L, 7) / 7 * 100), `${Math.min(L, 7)}<small>/7</small>`, 'ring-lg')}
       </section>
+      ${adm ? this.adminPanel() : `<button class="card mode-card admin-masuk" onclick="Studi.masukAdmin()">${Pic.html('🔧', 'mode-ic')}
+        <div><b>${T('Enter admin mode', 'Masuk mode admin')}</b><span>${T('Open every step without filling in the forms (for checking only)', 'Buka semua langkah tanpa mengisi form (hanya untuk mengecek)')}</span></div><span class="chev">›</span></button>`}
       <div class="mode-list">
         ${row(0, '🪪', T('1 · About you & your level', '1 · Data diri & level'), s.profil ? `${esc(s.profil.nama)} · ${s.level}` : T('± 3 min', '± 3 menit'), '#/studi/profil')}
         ${row(1, '📋', T('2 · Questionnaire (before)', '2 · Kuesioner (awal)'), T('20 statements about exam anxiety · ± 5 min', '20 pernyataan tentang kecemasan ujian · ± 5 menit'), '#/studi/skala/pre')}
@@ -100,7 +134,7 @@ const Studi = {
   PILIHAN: () => ({
     usia: ['15–18', '19–25', '26–35', '> 35'],
     negara: [T('Indonesia', 'Indonesia'), T('Vietnam', 'Vietnam'), T('Other', 'Lainnya')],
-    mandarin: ['A0', 'A1', 'A2', 'B1', 'B2', 'C1'],
+    mandarin: ['A0', 'A1', 'A2'],   // modul hanya sampai A2
     pernah: [T('Yes', 'Ya'), T('No', 'Tidak')],
     lama: [T('< 6 months', '< 6 bulan'), T('6–12 months', '6–12 bulan'), T('1–2 years', '1–2 tahun'), T('> 2 years', '> 2 tahun')],
     rencana: [T('Within 3 months', '≤ 3 bulan lagi'), T('In 3–6 months', '3–6 bulan lagi'), T('In more than 6 months', '> 6 bulan lagi'), T('Not sure yet', 'Belum tahu')],
@@ -156,7 +190,7 @@ const Studi = {
   butirCemas() { const b = this.belumPernah(); return this.data.kuesioner.cemas.flatMap(d => d.items.map(x => b && x.tb || x.t)); },
   renderSkala(f) {
     const s = this.get();
-    if ((f === 'pre' && this.langkah() !== 1) || (f === 'post' && this.langkah() !== 4)) return App.go('#/');
+    if (!this.admin() && ((f === 'pre' && this.langkah() !== 1) || (f === 'post' && this.langkah() !== 4))) return App.go('#/');
     App.bar(f === 'pre' ? T('Questionnaire (before)', 'Kuesioner (awal)') : T('Questionnaire (after)', 'Kuesioner (akhir)'), '#/');
     const items = this.butirCemas(), jw = (s[f] || {}).cemasDraf || [];
     this.renderLikert(items, jw, `Studi.likert('${f}', 'cemasDraf', %i, %v)`,
@@ -205,7 +239,7 @@ const Studi = {
 
   /* ===== Tes awal / akhir (mesin Ujian) ===== */
   startTes(f) {
-    if ((f === 'pre' && this.langkah() !== 2) || (f === 'post' && this.langkah() !== 5)) return App.go('#/');
+    if (!this.admin() && ((f === 'pre' && this.langkah() !== 2) || (f === 'post' && this.langkah() !== 5))) return App.go('#/');
     const paket = f === 'pre' ? 'A' : 'B', lv = this.get().level;
     const items = this.data.tes[lv][paket].map(t => ({ t, code: '' }));
     clearInterval(Ujian.timer);
@@ -235,7 +269,7 @@ const Studi = {
 
   /* ===== Evaluasi modul ===== */
   renderEval() {
-    if (this.langkah() !== 6) return App.go('#/');
+    if (!this.admin() && this.langkah() !== 6) return App.go('#/');
     const Q = this.data.kuesioner, d = this.get().post || {}, jw = d.evalDraf || [], tb = d.terbukaDraf || [];
     App.bar(T('Your opinion', 'Pendapatmu'), '#/');
     this._extra = `<h3 class="sub-title">${T('Short questions (optional)', 'Pertanyaan singkat (boleh dikosongkan)')}</h3>` + Q.terbuka.map((q, i) => `
@@ -299,6 +333,7 @@ const Studi = {
         <div>${App.ring(s.post?.tes?.skor ?? 0, s.post?.tes ? s.post.tes.skor + '%' : '–')}<small>${T('Post-test', 'Tes akhir')}</small></div>
       </div>
       ${pre && post ? `<p class="hint">${T(`Anxiety score (20 = calm, 100 = very anxious): ${pre.total} → ${post.total}`, `Skor kecemasan (20 = tenang, 100 = sangat cemas): ${pre.total} → ${post.total}`)}</p>` : ''}
+      ${this.admin() ? `<p class="hint"><b>${T('Admin mode: nothing is sent.', 'Mode admin: data tidak dikirim.')}</b></p>` : ''}
       <div class="panel"><div class="panel-k">${Pic.html('📤', 'ic-sm')} ${T('Sending to the researcher', 'Pengiriman ke peneliti')}</div>
         <p>${s.terkirim ? `${T('Last sent', 'Terakhir terkirim')}: ${new Date(s.terkirim).toLocaleString(Lang.LOCALE)}` : T('Not sent yet.', 'Belum terkirim.')}
         ${s.gagalKirim ? `<br><b>${T('The last attempt failed — check your internet connection and press the button below.', 'Pengiriman terakhir gagal — periksa koneksi internet lalu tekan tombol di bawah.')}</b>` : ''}</p>
@@ -381,7 +416,7 @@ App.route = async function () {
   }
   if (p[0] === 'kirim') { Speech.stop(); return Studi.renderKirim(); }
   // Bab hanya terbuka setelah tes awal, dan hanya bab level peserta; peta volume tidak dipakai (beranda = peta)
-  if (p[0] === 'm' && (Studi.langkah() < 3 || !Studi.mods().some(m => m.code === p[1]))) return App.go('#/');
+  if (p[0] === 'm' && ((!Studi.admin() && Studi.langkah() < 3) || !Studi.mods().some(m => m.code === p[1]))) return App.go('#/');
   if (p[0] === 'v' && p[2] !== 'kata') return App.go('#/');
   return _route.call(this);
 };

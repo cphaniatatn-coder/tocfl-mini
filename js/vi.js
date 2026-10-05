@@ -258,5 +258,21 @@ window.VI_UI = {
 "Replay the dialogue and listen": "Nghe lại hội thoại",
 "Practise the 核心 words with audio": "Luyện các từ 核心 có âm thanh",
 "Redo the tasks": "Làm lại các nhiệm vụ",
-"Move on to the next module": "Chuyển sang bài tiếp theo"
+"Move on to the next module": "Chuyển sang bài tiếp theo",
+"Admin password": "Mật khẩu quản trị",
+"Wrong password.": "Sai mật khẩu.",
+"This device already has participant data. Admin mode will replace it. Continue?": "Thiết bị này đã có dữ liệu của người tham gia. Chế độ quản trị sẽ thay thế dữ liệu đó. Tiếp tục?",
+"Leave admin mode? All admin answers and unit progress on this device will be deleted.": "Thoát chế độ quản trị? Mọi câu trả lời của quản trị viên và tiến độ các bài trên thiết bị này sẽ bị xóa.",
+"Delete the admin answers (questionnaires, tests, evaluation)?": "Xóa câu trả lời của quản trị viên (bảng hỏi, bài kiểm tra, đánh giá)?",
+"Admin mode": "Chế độ quản trị",
+"Every step is open in any order. Nothing is sent to the researcher.": "Mọi bước đều mở, theo thứ tự tùy ý. Không có dữ liệu nào được gửi cho nhà nghiên cứu.",
+"Level": "Cấp độ",
+"Questionnaire version": "Phiên bản bảng hỏi",
+"Has taken TOCFL": "Đã từng thi TOCFL",
+"Never taken TOCFL": "Chưa từng thi TOCFL",
+"Clear answers": "Xóa câu trả lời",
+"Leave admin mode": "Thoát quản trị",
+"Admin mode: nothing is sent.": "Chế độ quản trị: không gửi dữ liệu.",
+"Enter admin mode": "Vào chế độ quản trị",
+"Open every step without filling in the forms (for checking only)": "Mở mọi bước mà không cần điền biểu mẫu (chỉ để kiểm tra)"
 };
