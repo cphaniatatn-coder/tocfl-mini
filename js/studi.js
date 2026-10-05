@@ -401,7 +401,7 @@ Ujian.finish = function () {
 Ujian.result = function () { const s = this.session; return s.kind === 'pre' || s.kind === 'post' ? Studi.hasilTes(s) : _result.call(this); };
 
 /* ===== 聽力 gaya TOCFL di tes awal/akhir (sementara hanya level di TOCFL_AUDIO) =====
-   Kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
+   Audio diputar 1× saja, kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
    dialog → bunyi bel sekali → 問 dibacakan; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL). */
 const TOCFL_AUDIO = ['A0'];
 const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q' && TOCFL_AUDIO.includes(Studi.get().level); };
@@ -443,6 +443,9 @@ const TocflAudio = {
     if (ok() && onend) onend();
   },
 };
+// Audio hanya boleh diputar 1× (seperti TOCFL); render() memasang Soal.limit dari PLAY_LIMIT
+const _ujianRender = Ujian.render, PLAY_ASLI = Ujian.PLAY_LIMIT;
+Ujian.render = function () { this.PLAY_LIMIT = tocflAktif() ? 1 : PLAY_ASLI; return _ujianRender.call(this); };
 const _soalPlay = Soal.play, _soalBody = Soal.body, _speedUI = Speech.speedUI;
 Soal.play = function (key) {
   const t = this.reg[key];
