@@ -26,11 +26,13 @@ const Studi = {
   vol() { return LEVEL_VOL[this.get().level]; },
   mods() { return this.vol() ? App.plan[this.vol()] : []; },
   nDone() { return this.mods().filter(m => App.getP(m.code).done).length; },
+  admin() { return (this.get().profil?.nama || '').toLowerCase() === 'admin'; },   // nama "admin" = mode lihat isi: lewati kuesioner & tes awal, tidak kirim data
 
   /* Langkah: 0 data diri · 1 kuesioner awal · 2 tes awal · 3 modul · 4 kuesioner akhir · 5 tes akhir · 6 evaluasi · 7 selesai */
   langkah() {
     const s = this.get();
     if (!s.profil) return 0;
+    if (this.admin() && !s.pre?.tes) return 3;
     if (!s.pre?.cemas) return 1;
     if (!s.pre?.tes) return 2;
     if (this.nDone() < this.mods().length) return 3;
@@ -140,23 +142,26 @@ const Studi = {
     p.nama = (document.getElementById('p-nama').value || '').trim();
     const kurang = ['usia', 'negara', 'mandarin', 'pernah', 'lama', 'rencana'].filter(k => p[k] == null);
     if (!p.nama) return App.toast(T('Enter your name or initials.', 'Isi nama atau inisialmu.'));
-    if (kurang.length) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
+    const admin = p.nama.toLowerCase() === 'admin';
+    if (kurang.length && !admin) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
     if (!p.level) return App.toast(T('Choose a level.', 'Pilih level dulu.'));
-    if (!p.setuju) return App.toast(T('Tick the consent box first.', 'Centang persetujuan dulu.'));
+    if (!p.setuju && !admin) return App.toast(T('Tick the consent box first.', 'Centang persetujuan dulu.'));
     this.set({ profil: p, profilDraf: null, level: p.level, mulai: this.get().mulai || Date.now(), lang: LANG });
     this.uid();
     App.go('#/');
   },
 
   /* ===== Kuesioner kecemasan (pre & post sama persis) ===== */
-  butirCemas() { return this.data.kuesioner.cemas.flatMap(d => d.items.map(x => x.t)); },
+  belumPernah() { return this.get().profil?.pernah === 1; },   // PILIHAN.pernah: 0 Ya · 1 Tidak
+  butirCemas() { const b = this.belumPernah(); return this.data.kuesioner.cemas.flatMap(d => d.items.map(x => b && x.tb || x.t)); },
   renderSkala(f) {
     const s = this.get();
     if ((f === 'pre' && this.langkah() !== 1) || (f === 'post' && this.langkah() !== 4)) return App.go('#/');
     App.bar(f === 'pre' ? T('Questionnaire (before)', 'Kuesioner (awal)') : T('Questionnaire (after)', 'Kuesioner (akhir)'), '#/');
     const items = this.butirCemas(), jw = (s[f] || {}).cemasDraf || [];
     this.renderLikert(items, jw, `Studi.likert('${f}', 'cemasDraf', %i, %v)`,
-      `<p>${T('Read each statement and choose how much you agree. There are no right or wrong answers — answer honestly about how you feel about the TOCFL exam.', 'Baca tiap pernyataan, lalu pilih seberapa setuju kamu. Tidak ada jawaban benar atau salah — jawablah sejujurnya tentang perasaanmu terhadap ujian TOCFL.')}</p>`,
+      `<p>${T('Read each statement and choose how much you agree. There are no right or wrong answers — answer honestly about how you feel about the TOCFL exam.', 'Baca tiap pernyataan, lalu pilih seberapa setuju kamu. Tidak ada jawaban benar atau salah — jawablah sejujurnya tentang perasaanmu terhadap ujian TOCFL.')}</p>
+      ${this.belumPernah() ? `<p><b>${esc(this.data.kuesioner.petunjukBaru)}</b></p>` : ''}`,
       `Studi.simpanSkala('${f}')`);
   },
   renderLikert(items, jw, onpick, intro, onsave) {
@@ -275,13 +280,14 @@ const Studi = {
     };
   },
   async kirim() {
+    if (this.admin()) throw new Error('mode admin tidak mengirim data');
     if (!KIRIM_URL) throw new Error('KIRIM_URL kosong');
     const res = await fetch(KIRIM_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(this.payload()) });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || 'ditolak');
     this.set({ terkirim: Date.now(), gagalKirim: false });
   },
-  kirimDiam() { if (this.get().profil?.setuju) this.kirim().catch(() => this.set({ gagalKirim: true })); },
+  kirimDiam() { if (this.get().profil?.setuju && !this.admin()) this.kirim().catch(() => this.set({ gagalKirim: true })); },
   renderKirim() {
     const s = this.get(), L = this.langkah();
     App.bar(T('Results', 'Hasil'), '#/');
