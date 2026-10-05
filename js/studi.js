@@ -401,11 +401,13 @@ Ujian.finish = function () {
 Ujian.result = function () { const s = this.session; return s.kind === 'pre' || s.kind === 'post' ? Studi.hasilTes(s) : _result.call(this); };
 
 /* ===== 聽力 gaya TOCFL di tes awal/akhir (semua level) =====
-   Audio diputar 1× saja, kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
+   Tombol putar hanya bisa ditekan sekali; naskah lalu diputar ULANG× otomatis (jeda JEDA_ULANG ms di antaranya).
+   Kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
    bunyi bel di posisi t.bel; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL).
    Urutan klip: Part 1 = [問, A, B, C]; Part 2–4 = [baris dialog…, 問]. t.bel = daftar nomor klip yang DIDAHULUI bel
    (diedit lewat 🔔 di _kerja/mini/edit-tes-mini.xlsx). Tanpa t.bel: Part 2–4 → bel sebelum 問, Part 1 → tanpa bel. */
 const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q'; };
+const ULANG = 2, JEDA_ULANG = 2500;
 const TocflAudio = {
   ac: null,
   jeda: ms => new Promise(r => setTimeout(r, ms)),
@@ -426,7 +428,7 @@ const TocflAudio = {
       } catch { done(); }
     });
   },
-  async putar(t, onend) {
+  async putar(t, onend, onputaran) {
     Speech.stop();
     const tok = Speech.token, ok = () => tok === Speech.token, rate = Speech.rate;
     Speech.rate = 1;
@@ -437,28 +439,38 @@ const TocflAudio = {
     const bel = t.bel || (t.type === 'listen_pic' ? [] : [klip.length - 1]);
     Speech.preload(klip.map(([x, p]) => [x, p]));
     try {
-      for (const [i, [x, p, j]] of klip.entries()) {
-        if (!ok()) return;
-        if (bel.includes(i)) { await this.jeda(300); await this.bel(); if (!ok()) return; }
-        await Speech.play(x, p, tok); await this.jeda(j);
+      for (let n = 1; n <= ULANG; n++) {
+        if (n > 1) { await this.jeda(JEDA_ULANG); if (!ok()) return; }
+        if (onputaran) onputaran(n);
+        for (const [i, [x, p, j]] of klip.entries()) {
+          if (!ok()) return;
+          if (bel.includes(i)) { await this.jeda(300); await this.bel(); if (!ok()) return; }
+          await Speech.play(x, p, tok); await this.jeda(j);
+        }
+        if (bel.includes(klip.length) && ok()) await this.bel();   // 🔔 di akhir naskah
       }
-      if (bel.includes(klip.length) && ok()) await this.bel();   // 🔔 di akhir naskah
     } finally { Speech.rate = rate; }
     if (ok() && onend) onend();
   },
 };
-// Audio hanya boleh diputar 1× (seperti TOCFL); render() memasang Soal.limit dari PLAY_LIMIT
-const _ujianRender = Ujian.render, PLAY_ASLI = Ujian.PLAY_LIMIT;
+// Tombol putar hanya sekali (render() memasang Soal.limit dari PLAY_LIMIT); layar pembuka bagian menyebut "diputar 2× otomatis"
+const _ujianRender = Ujian.render, PLAY_ASLI = Ujian.PLAY_LIMIT, _partIntro = Ujian.partIntro;
 Ujian.render = function () { this.PLAY_LIMIT = tocflAktif() ? 1 : PLAY_ASLI; return _ujianRender.call(this); };
+Ujian.partIntro = function (pi) {
+  const r = _partIntro.call(this, pi), el = document.querySelector('.part-intro small');
+  if (tocflAktif() && el) el.innerHTML = el.innerHTML.replace(`${T('audio max.', 'audio maks.')} 1×`, T('audio plays 2× automatically (one tap)', 'audio diputar 2× otomatis (sekali tekan)'));
+  return r;
+};
 const _soalPlay = Soal.play, _soalBody = Soal.body, _speedUI = Speech.speedUI;
 Soal.play = function (key) {
   const t = this.reg[key];
   if (!tocflAktif() || !t) return _soalPlay.call(this, key);
-  if (this.limit && (this.plays[key] || 0) >= this.limit) return App.toast(T(`In the exam, audio can only be played ${this.limit}×.`, `Di ujian, audio hanya bisa diputar ${this.limit}×.`));
-  this.plays[key] = (this.plays[key] || 0) + 1;
-  const btn = document.getElementById('play-' + key);
-  if (btn) { btn.classList.add('playing'); btn.querySelector('small').textContent = T(`played ${this.plays[key]}×`, `diputar ${this.plays[key]}×`); }
-  TocflAudio.putar(t, () => btn && btn.classList.remove('playing'));
+  if ((this.plays[key] || 0) >= 1) return App.toast(T('The audio has already been played (2× automatically) and cannot be repeated.', 'Audio sudah diputar (2× otomatis) dan tidak bisa diulang.'));
+  this.plays[key] = 1;
+  const btn = document.getElementById('play-' + key), kecil = m => { const s = btn && btn.querySelector('small'); if (s) s.textContent = m; };
+  if (btn) btn.classList.add('playing');
+  TocflAudio.putar(t, () => { if (btn) btn.classList.remove('playing'); kecil(T('played 2×', 'sudah diputar 2×')); },
+                   n => kecil(T(`playing ${n}/2`, `diputar ${n}/2`)));
 };
 Soal.body = function (t, key, a, ns, mode) {
   const h = _soalBody.call(this, t, key, a, ns, mode);

@@ -274,5 +274,9 @@ window.VI_UI = {
 "Leave admin mode": "Thoát quản trị",
 "Admin mode: nothing is sent.": "Chế độ quản trị: không gửi dữ liệu.",
 "Enter admin mode": "Vào chế độ quản trị",
-"Open every step without filling in the forms (for checking only)": "Mở mọi bước mà không cần điền biểu mẫu (chỉ để kiểm tra)"
+"Open every step without filling in the forms (for checking only)": "Mở mọi bước mà không cần điền biểu mẫu (chỉ để kiểm tra)",
+"audio plays 2× automatically (one tap)": "âm thanh tự phát 2 lần (bấm một lần)",
+"The audio has already been played (2× automatically) and cannot be repeated.": "Âm thanh đã được phát (tự động 2 lần) và không thể phát lại.",
+"played 2×": "đã phát 2 lần",
+"playing {0}/2": "đang phát {0}/2"
 };
