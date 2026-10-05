@@ -400,6 +400,65 @@ Ujian.finish = function () {
 };
 Ujian.result = function () { const s = this.session; return s.kind === 'pre' || s.kind === 'post' ? Studi.hasilTes(s) : _result.call(this); };
 
+/* ===== 聽力 gaya TOCFL di tes awal/akhir (sementara hanya level di TOCFL_AUDIO) =====
+   Kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
+   dialog → bunyi bel sekali → 問 dibacakan; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL). */
+const TOCFL_AUDIO = ['A0'];
+const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q' && TOCFL_AUDIO.includes(Studi.get().level); };
+const TocflAudio = {
+  ac: null,
+  jeda: ms => new Promise(r => setTimeout(r, ms)),
+  // Bel "ding" satu kali (Web Audio, tanpa file)
+  bel() {
+    return new Promise(done => {
+      try {
+        const C = this.ac || (this.ac = new (window.AudioContext || window.webkitAudioContext)());
+        C.resume();
+        const t0 = C.currentTime + 0.05;
+        for (const [f, g] of [[1318.5, 0.35], [2637, 0.08]]) {
+          const o = C.createOscillator(), v = C.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          v.gain.setValueAtTime(0.0001, t0); v.gain.exponentialRampToValueAtTime(g, t0 + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.3);
+          o.connect(v).connect(C.destination); o.start(t0); o.stop(t0 + 1.4);
+        }
+        setTimeout(done, 1500);
+      } catch { done(); }
+    });
+  },
+  async putar(t, onend) {
+    Speech.stop();
+    const tok = Speech.token, ok = () => tok === Speech.token, rate = Speech.rate;
+    Speech.rate = 1;
+    try {
+      if (t.type === 'listen_pic') {   // Part 1: 問, lalu A, B, C
+        const tx = Soal.picTexts(t);
+        Speech.preload(tx.map(x => [x, 'N']));
+        for (const [i, x] of tx.entries()) { if (!ok()) return; await Speech.play(x, 'N', tok); await this.jeda(i === 0 ? 1200 : 900); }
+      } else {                          // Part 2–4: dialog → bel → 問
+        Speech.preloadLines(t.lines); if (t.question) Speech.preload([[t.question, 'N']]);
+        for (const l of t.lines) { if (!ok()) return; await Speech.play(l.zh, Speech.profil(l.sp), tok); await this.jeda(600); }
+        if (t.question && ok()) { await this.jeda(300); await this.bel(); if (!ok()) return; await Speech.play(t.question, 'N', tok); }
+      }
+    } finally { Speech.rate = rate; }
+    if (ok() && onend) onend();
+  },
+};
+const _soalPlay = Soal.play, _soalBody = Soal.body, _speedUI = Speech.speedUI;
+Soal.play = function (key) {
+  const t = this.reg[key];
+  if (!tocflAktif() || !t) return _soalPlay.call(this, key);
+  if (this.limit && (this.plays[key] || 0) >= this.limit) return App.toast(T(`In the exam, audio can only be played ${this.limit}×.`, `Di ujian, audio hanya bisa diputar ${this.limit}×.`));
+  this.plays[key] = (this.plays[key] || 0) + 1;
+  const btn = document.getElementById('play-' + key);
+  if (btn) { btn.classList.add('playing'); btn.querySelector('small').textContent = T(`played ${this.plays[key]}×`, `diputar ${this.plays[key]}×`); }
+  TocflAudio.putar(t, () => btn && btn.classList.remove('playing'));
+};
+Soal.body = function (t, key, a, ns, mode) {
+  const h = _soalBody.call(this, t, key, a, ns, mode);
+  return tocflAktif() && mode === 'exam' && this.isListen(t) ? h.replace(/<div class="q-ask" lang="zh-TW">問：[^<]*<\/div>/, '') : h;
+};
+Speech.speedUI = function () { return tocflAktif() ? '' : _speedUI.call(this); };
+
 // Rute tambahan: #/studi/profil · #/studi/skala/pre|post · #/studi/tes/pre|post · #/studi/eval · #/kirim
 const _route = App.route;
 App.route = async function () {
