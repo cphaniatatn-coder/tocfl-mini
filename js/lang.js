@@ -4,6 +4,10 @@
    English sebagai kunci — termasuk pola dengan {0} {1} untuk teks yang berisi angka/nilai.
    Data isi per bahasa: data/id/, data/en/, data/vi/. */
 
+// File data/ diberi ?v=<versi> (window.DATA_V di index.html, dari buat_mini.py): GitHub Pages meng-cache 10 menit,
+// tanpa ini peserta bisa masih melihat kuesioner/soal lama setelah diperbarui.
+if (window.DATA_V) { const _fetch = window.fetch.bind(window); window.fetch = (u, o) => _fetch(typeof u === 'string' && u.startsWith('data/') ? `${u}?v=${window.DATA_V}` : u, o); }
+
 const LANG_KEY = 'tocflmini_lang';
 const LANG_PILIH = (() => { try { const l = localStorage.getItem(LANG_KEY); return ['id', 'en', 'vi'].includes(l) ? l : null; } catch { return null; } })();
 const LANG = LANG_PILIH || 'en';
