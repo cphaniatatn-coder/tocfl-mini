@@ -400,11 +400,12 @@ Ujian.finish = function () {
 };
 Ujian.result = function () { const s = this.session; return s.kind === 'pre' || s.kind === 'post' ? Studi.hasilTes(s) : _result.call(this); };
 
-/* ===== 聽力 gaya TOCFL di tes awal/akhir (sementara hanya level di TOCFL_AUDIO) =====
+/* ===== 聽力 gaya TOCFL di tes awal/akhir (semua level) =====
    Audio diputar 1× saja, kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
-   dialog → bunyi bel sekali → 問 dibacakan; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL). */
-const TOCFL_AUDIO = ['A0'];
-const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q' && TOCFL_AUDIO.includes(Studi.get().level); };
+   bunyi bel di posisi t.bel; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL).
+   Urutan klip: Part 1 = [問, A, B, C]; Part 2–4 = [baris dialog…, 問]. t.bel = daftar nomor klip yang DIDAHULUI bel
+   (diedit lewat 🔔 di _kerja/mini/edit-tes-mini.xlsx). Tanpa t.bel: Part 2–4 → bel sebelum 問, Part 1 → tanpa bel. */
+const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q'; };
 const TocflAudio = {
   ac: null,
   jeda: ms => new Promise(r => setTimeout(r, ms)),
@@ -429,16 +430,19 @@ const TocflAudio = {
     Speech.stop();
     const tok = Speech.token, ok = () => tok === Speech.token, rate = Speech.rate;
     Speech.rate = 1;
+    // klip: [teks, profil, jeda sesudahnya (ms)]
+    const klip = t.type === 'listen_pic'
+      ? Soal.picTexts(t).map((x, i) => [x, 'N', i === 0 ? 1200 : 900])
+      : [...(t.lines || []).map(l => [l.zh, Speech.profil(l.sp), 600]), ...(t.question ? [[t.question, 'N', 0]] : [])];
+    const bel = t.bel || (t.type === 'listen_pic' ? [] : [klip.length - 1]);
+    Speech.preload(klip.map(([x, p]) => [x, p]));
     try {
-      if (t.type === 'listen_pic') {   // Part 1: 問, lalu A, B, C
-        const tx = Soal.picTexts(t);
-        Speech.preload(tx.map(x => [x, 'N']));
-        for (const [i, x] of tx.entries()) { if (!ok()) return; await Speech.play(x, 'N', tok); await this.jeda(i === 0 ? 1200 : 900); }
-      } else {                          // Part 2–4: dialog → bel → 問
-        Speech.preloadLines(t.lines); if (t.question) Speech.preload([[t.question, 'N']]);
-        for (const l of t.lines) { if (!ok()) return; await Speech.play(l.zh, Speech.profil(l.sp), tok); await this.jeda(600); }
-        if (t.question && ok()) { await this.jeda(300); await this.bel(); if (!ok()) return; await Speech.play(t.question, 'N', tok); }
+      for (const [i, [x, p, j]] of klip.entries()) {
+        if (!ok()) return;
+        if (bel.includes(i)) { await this.jeda(300); await this.bel(); if (!ok()) return; }
+        await Speech.play(x, p, tok); await this.jeda(j);
       }
+      if (bel.includes(klip.length) && ok()) await this.bel();   // 🔔 di akhir naskah
     } finally { Speech.rate = rate; }
     if (ok() && onend) onend();
   },
