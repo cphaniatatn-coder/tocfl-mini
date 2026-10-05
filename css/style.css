@@ -291,6 +291,8 @@ details.panel summary { cursor: pointer; list-style: none; }
 .opts-pic .opt { flex-direction: column; justify-content: center; gap: 4px; padding: 12px 6px; text-align: center; position: relative; }
 .opts-pic .opt small { font-size: 12.5px; color: var(--sub); }
 .opts-pic .opt-l { position: absolute; top: 6px; left: 8px; }
+.opt-ill { width: 100%; height: auto; display: block; background: #fff; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line); }
+.opts-pic .opt:has(.opt-ill) { padding: 30px 4px 4px !important; }
 .opt-l { width: 24px; height: 24px; border-radius: 7px; background: var(--surface2); font-size: 12.5px; display: grid; place-items: center; flex-shrink: 0; color: var(--sub); }
 .opt:active:not(:disabled) { background: var(--surface2); }
 .opt.sel { box-shadow: inset 0 0 0 2.5px var(--pri); background: var(--pri-pale); }

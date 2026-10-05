@@ -81,7 +81,7 @@ const Soal = {
       if (t.question && !lp) h += `<div class="q-ask" lang="zh-TW">問：${esc(t.question)}</div>`;
     }
     // 閱讀 Part 2 (gambar → kalimat) & Part 3 (gambar + kalimat rumpang)
-    if (t.picture && !lp) h += this.picture(t.picture, bw, true);
+    if (t.picture && !lp) h += this.picture(t.picture, bw, !t.picture.img || show);   // ilustrasi: keterangan setelah dijawab
     if (t.type === 'read_gap') {
       const fill = a != null ? `<b class="gap-fill">${esc(t.options[a])}</b>` : '<span class="gap">＿＿＿</span>';
       h += `<div class="q-text" lang="zh-TW">${esc(t.text).replace(/（\s*）/, fill)}</div>`;
@@ -113,7 +113,10 @@ const Soal = {
       const abc = lp && !show;
       h += `<div class="opts ${pic ? 'opts-pic' : ''}${abc ? ' opts-abc' : ''}">${t.options.map((o, oi) => {
         const cls = show ? (oi === t.answer ? 'right' : oi === a ? 'wrong' : 'dim') : (oi === a ? 'sel' : '');
-        const lab = abc ? '' : typeof o === 'string' ? `<span lang="zh-TW">${esc(o)}</span>` : `${Pic.group(o.icon, 'pic-opt', bw)}<small>${esc(o.label)}</small>`;
+        // pilihan bergambar: ilustrasi SVG (o.img) bila ada — keterangan baru tampil setelah dijawab, seperti naskah TOCFL
+        const lab = abc ? '' : typeof o === 'string' ? `<span lang="zh-TW">${esc(o)}</span>`
+          : o.img ? `<img class="opt-ill" src="img/soal/${esc(o.img)}.svg" alt="" draggable="false">${show ? `<small>${esc(o.label)}</small>` : ''}`
+          : `${Pic.group(o.icon, 'pic-opt', bw)}<small>${esc(o.label)}</small>`;
         return `<button class="opt ${cls}" ${show ? 'disabled' : `onclick="${ns}.pick('${key}', ${oi})"`}><b class="opt-l">${L[oi]}</b>${lab}</button>`;
       }).join('')}</div>`;
     }
