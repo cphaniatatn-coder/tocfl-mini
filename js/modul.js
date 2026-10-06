@@ -418,9 +418,9 @@ const Modul = {
   },
   // Catatan tambahan dari buku rujukan grammar (hanya ada di data modul mini): {point?, rujukan, note: [...]}
   catatanHTML(c) {
-    return `<div class="gnote"><div class="panel-k">${Pic.html('📘', 'ic-sm')} ${c.point ? `<b>${esc(c.point)}</b>` : T('Notes from the grammar book', 'Catatan dari buku grammar')}</div>
+    return `<div class="gnote"><div class="panel-k">${Pic.html(c.rujukan ? '📘' : '💡', 'ic-sm')} ${c.point ? `<b>${esc(c.point)}</b>` : T('Notes from the grammar book', 'Catatan dari buku grammar')}</div>
       <ul>${c.note.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
-      <small>${T('Source', 'Sumber')}: ${esc(c.rujukan)}</small></div>`;
+      ${c.rujukan ? `<small>${T('Source', 'Sumber')}: ${esc(c.rujukan)}</small>` : ''}</div>`;
   },
   // Latihan tambahan (modul mini): [{q, options, answer, why}]; jawaban disimpan di progres bab (glat["gi-li"])
   latihanHTML(list, gi) {
