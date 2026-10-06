@@ -392,7 +392,8 @@ const Modul = {
   /* ---------- 語法: balok Lego ---------- */
   r_grammar() {
     const gc = App.getP(this.m.code).gchecks || {};
-    const bab = (this.m.catatan || []).map(c => this.catatanHTML(c)).join('');   // catatan tingkat bab (modul mini)
+    // modul mini: catatan buku grammar & latihan tambahan tingkat bab (bab tanpa poin grammar, atau topik pendamping)
+    const bab = (this.m.catatan || []).map(c => this.catatanHTML(c)).join('') + (this.m.latihan ? this.latihanHTML(this.m.latihan, 'b') : '');
     if (!this.m.grammar.length) return `
       <div class="panel"><div class="panel-k">${T('No new pattern in this scene', 'Tidak ada pola baru di adegan ini')}</div>
         <p>${T('This scene only adds vocabulary, on purpose. Patterns you reuse here:', 'Adegan ini sengaja hanya menambah kosakata. Pola yang kamu pakai ulang:')}</p>
@@ -404,7 +405,7 @@ const Modul = {
         <div class="gcard-head"><span class="gid">TBCL #${g.tbcl_id}</span><h3 lang="zh-TW">${esc(g.point)}</h3></div>
         <div class="blocks" lang="zh-TW">${g.blocks.map(([w, role], bi) => `<span class="block r${bi % 5}"><b>${esc(w)}</b><small>${esc(role)}</small></span>`).join('')}</div>
         <div class="pattern">${T('Pattern', 'Pola')}: <code lang="zh-TW">${esc(g.pattern)}</code></div>
-        <p>${esc(g.explain)}</p>${g.catatan ? this.catatanHTML(g.catatan) : ''}
+        <p>${esc(g.explain)}</p>${(g.catatan || []).map(c => this.catatanHTML(c)).join('')}
         <ul class="examples">${g.examples.map((e, ei) => `<li><span lang="zh-TW">${esc(e.zh)}</span>
           <button class="say-btn" onclick="Speech.say(Modul.m.grammar[${gi}].examples[${ei}].zh)" aria-label="${T('Listen', 'Dengarkan')}">${Pic.html('🔊', 'ic-xs')}</button>
           <small>${esc(e.id)}</small></li>`).join('')}</ul>
@@ -412,15 +413,30 @@ const Modul = {
           <div class="opts">${g.check.options.map((o, oi) => {
             const a = gc[gi], cls = a != null ? (oi === g.check.answer ? 'right' : oi === a ? 'wrong' : 'dim') : '';
             return `<button class="opt ${cls}" ${a != null ? 'disabled' : `onclick="Modul.gcheck(${gi}, ${oi})"`}><span lang="zh-TW">${esc(o)}</span></button>`;
-          }).join('')}</div></div>
+          }).join('')}</div></div>${g.latihan ? this.latihanHTML(g.latihan, gi) : ''}
       </article>`).join('')}${bab}`;
   },
   // Catatan tambahan dari buku rujukan grammar (hanya ada di data modul mini): {point?, rujukan, note: [...]}
   catatanHTML(c) {
     return `<div class="gnote"><div class="panel-k">${Pic.html('📘', 'ic-sm')} ${c.point ? `<b>${esc(c.point)}</b>` : T('Notes from the grammar book', 'Catatan dari buku grammar')}</div>
       <ul>${c.note.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
-      <small>${T('Source', 'Sumber')}: 《看圖學中文語法・基礎篇》 ${esc(c.rujukan)}</small></div>`;
+      <small>${T('Source', 'Sumber')}: ${esc(c.rujukan)}</small></div>`;
   },
+  // Latihan tambahan (modul mini): [{q, options, answer, why}]; jawaban disimpan di progres bab (glat["gi-li"])
+  latihanHTML(list, gi) {
+    const jw = App.getP(this.m.code).glat || {}, n = list.filter((_, li) => jw[`${gi}-${li}`] != null).length;
+    return `<div class="glat"><div class="panel-k">${Pic.html('✏️', 'ic-sm')} ${T('More practice', 'Latihan tambahan')} <small>${n}/${list.length}</small></div>
+      ${list.map((x, li) => {
+        const a = jw[`${gi}-${li}`];
+        return `<div class="glat-q"><div><b>${li + 1}.</b> <span lang="zh-TW">${esc(x.q)}</span></div>
+          <div class="opts">${x.options.map((o, oi) => `<button class="opt ${a != null ? (oi === x.answer ? 'right' : oi === a ? 'wrong' : 'dim') : ''}"
+            ${a != null ? 'disabled' : `onclick="Modul.glat('${gi}', ${li}, ${oi})"`}><span lang="zh-TW">${esc(o)}</span></button>`).join('')}</div>
+          ${a != null ? `<p class="glat-why ${a === x.answer ? 'ok' : 'no'}">${a === x.answer ? '✓' : '✗'} ${esc(x.why)}</p>` : ''}</div>`;
+      }).join('')}
+      ${n ? `<button class="btn small ghost" onclick="Modul.glatUlang('${gi}')">${T('Try again', 'Ulangi')}</button>` : ''}</div>`;
+  },
+  glat(gi, li, oi) { const j = App.getP(this.m.code).glat || {}; j[`${gi}-${li}`] = oi; this.keepScroll(() => App.setP(this.m.code, { glat: j })); },
+  glatUlang(gi) { const j = App.getP(this.m.code).glat || {}; for (const k in j) if (k.startsWith(gi + '-')) delete j[k]; this.keepScroll(() => App.setP(this.m.code, { glat: j })); },
   gcheck(gi, oi) { const gc = App.getP(this.m.code).gchecks || {}; gc[gi] = oi; this.keepScroll(() => App.setP(this.m.code, { gchecks: gc })); },
 
   /* ---------- 反思與進度 ---------- */

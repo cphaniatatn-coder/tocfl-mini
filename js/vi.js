@@ -280,5 +280,6 @@ window.VI_UI = {
 "played 2×": "đã phát 2 lần",
 "playing {0}/2": "đang phát {0}/2",
 "Notes from the grammar book": "Ghi chú từ sách ngữ pháp",
-"Source": "Nguồn"
+"Source": "Nguồn",
+"More practice": "Luyện tập thêm"
 };

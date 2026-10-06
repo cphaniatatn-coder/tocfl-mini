@@ -296,6 +296,10 @@ details.panel summary { cursor: pointer; list-style: none; }
 .gnote { margin: 12px 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--pri-pale); box-shadow: inset 4px 0 0 var(--pri); }
 .gnote ul { margin: 8px 0 6px; padding-left: 18px; } .gnote li { margin-bottom: 6px; line-height: 1.55; }
 .gnote small { color: var(--sub); font-size: 12px; }
+.glat { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.glat-q { margin: 10px 0 14px; } .glat-q .opts { margin-top: 6px; }
+.glat-why { margin: 6px 0 0; font-size: 14px; padding: 8px 10px; border-radius: var(--r-sm); }
+.glat-why.ok { background: var(--ok-bg); color: var(--ok); } .glat-why.no { background: var(--no-bg); color: var(--no); }
 .opt-l { width: 24px; height: 24px; border-radius: 7px; background: var(--surface2); font-size: 12.5px; display: grid; place-items: center; flex-shrink: 0; color: var(--sub); }
 .opt:active:not(:disabled) { background: var(--surface2); }
 .opt.sel { box-shadow: inset 0 0 0 2.5px var(--pri); background: var(--pri-pale); }
