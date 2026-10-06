@@ -400,13 +400,13 @@ Ujian.finish = function () {
 };
 Ujian.result = function () { const s = this.session; return s.kind === 'pre' || s.kind === 'post' ? Studi.hasilTes(s) : _result.call(this); };
 
-/* ===== 聽力 gaya TOCFL di tes awal/akhir (semua level) =====
+/* ===== 聽力 gaya TOCFL di tes awal/akhir & Tes Bab (semua level) =====
    Tombol putar hanya bisa ditekan sekali; naskah lalu diputar ULANG× otomatis (jeda JEDA_ULANG ms di antaranya).
    Kecepatan tetap 1× (pilihan kecepatan disembunyikan), jeda antarkalimat lebih panjang,
    bunyi bel di posisi t.bel; teks 問 tidak dicetak selama ujian (seperti naskah TOCFL).
    Urutan klip: Part 1 = [問, A, B, C]; Part 2–4 = [baris dialog…, 問]. t.bel = daftar nomor klip yang DIDAHULUI bel
    (diedit lewat 🔔 di _kerja/mini/edit-tes-mini.xlsx). Tanpa t.bel: Part 2–4 → bel sebelum 問, Part 1 → tanpa bel. */
-const tocflAktif = () => { const s = Ujian.session; return !!s && (s.kind === 'pre' || s.kind === 'post') && s.phase === 'q'; };
+const tocflAktif = () => { const s = Ujian.session; return !!s && ['pre', 'post', 'tes'].includes(s.kind) && s.phase === 'q'; };   // tes = Tes Bab
 const ULANG = 2, JEDA_ULANG = 2500;
 const TocflAudio = {
   ac: null,
