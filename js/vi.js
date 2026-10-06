@@ -286,5 +286,14 @@ window.VI_UI = {
 "Optional": "Tùy chọn",
 "Continue to level {0}": "Tiếp tục lên cấp độ {0}",
 "You have finished {0}. Want to go on? New pre-test, 6 units of {1} and post-test.": "Bạn đã hoàn thành {0}. Muốn học tiếp không? Bài kiểm tra đầu vào mới, 6 bài {1} và bài kiểm tra cuối.",
-"round": "vòng"
+"round": "vòng",
+"Not passed yet / Novice (準備級)": "Chưa đỗ / Novice (準備級)",
+"A2 · 基礎級 or higher": "A2 · 基礎級 trở lên",
+"Highest TOCFL level you have passed": "Cấp độ TOCFL cao nhất bạn đã đỗ",
+"Your starting level in this trial": "Cấp độ bắt đầu của bạn trong thử nghiệm này",
+"You have already passed A2 or higher. This trial module only covers levels A0–A2, so it is not meant for you. Thank you for your interest! 謝謝！": "Bạn đã đỗ A2 trở lên. Học phần thử nghiệm này chỉ gồm cấp độ A0–A2 nên không dành cho bạn. Cảm ơn bạn đã quan tâm! 謝謝！",
+"Answer the questions above first.": "Hãy trả lời các câu hỏi ở trên trước.",
+"The level is set automatically: if you passed TOCFL A1, you start at A2; otherwise you start at the level of your self-assessment. After finishing, you may continue to the next level (up to A2). The level cannot be changed after the first questionnaire.": "Cấp độ được xác định tự động: nếu bạn đã đỗ TOCFL A1, bạn bắt đầu ở A2; nếu chưa, bạn bắt đầu ở cấp độ bạn tự đánh giá. Sau khi hoàn thành, bạn có thể học tiếp cấp độ tiếp theo (đến A2). Không thể đổi cấp độ sau bảng hỏi đầu tiên.",
+"This trial only covers A0–A2.": "Thử nghiệm này chỉ dành cho A0–A2.",
+"Answer all the questions.": "Hãy trả lời tất cả các câu hỏi."
 };

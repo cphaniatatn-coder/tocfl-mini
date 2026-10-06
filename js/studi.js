@@ -163,11 +163,12 @@ const Studi = {
     negara: [T('Indonesia', 'Indonesia'), T('Vietnam', 'Vietnam'), T('Other', 'Lainnya')],
     mandarin: ['A0', 'A1', 'A2'],   // modul hanya sampai A2
     pernah: [T('Yes', 'Ya'), T('No', 'Tidak')],
+    lulus: [T('Not passed yet / Novice (準備級)', 'Belum lulus / Novice (準備級)'), 'A1 · 入門級', T('A2 · 基礎級 or higher', 'A2 · 基礎級 atau lebih tinggi')],
     lama: [T('< 6 months', '< 6 bulan'), T('6–12 months', '6–12 bulan'), T('1–2 years', '1–2 tahun'), T('> 2 years', '> 2 tahun')],
     rencana: [T('Within 3 months', '≤ 3 bulan lagi'), T('In 3–6 months', '3–6 bulan lagi'), T('In more than 6 months', '> 6 bulan lagi'), T('Not sure yet', 'Belum tahu')],
   }),
   renderProfil() {
-    const s = this.get(), p = s.profilDraf || s.profil || {}, P = this.PILIHAN(), Q = this.data.kuesioner;
+    const s = this.get(), p = s.profilDraf || s.profil || {}, P = this.PILIHAN(), Q = this.data.kuesioner, lv = this.levelAwal(p);
     if (s.pre?.cemas || this.putaran() > 1) return App.go('#/');   // data diri & level dikunci setelah kuesioner awal / di putaran lanjutan
     App.bar(T('About you', 'Data diri'), '#/');
     const radio = (k, opts, judul) => `<div class="field-k">${judul}</div>
@@ -182,16 +183,26 @@ const Studi = {
       ${radio('negara', P.negara, T('Nationality', 'Kewarganegaraan'))}
       ${radio('mandarin', P.mandarin, T('Your current Chinese level (self-assessment)', 'Kemampuan Mandarin saat ini (penilaian diri)'))}
       ${radio('pernah', P.pernah, T('Have you ever taken a Chinese proficiency test (TOCFL)?', 'Pernah mengikuti ujian kemampuan Mandarin (TOCFL)?'))}
+      ${p.pernah === 0 ? radio('lulus', P.lulus, T('Highest TOCFL level you have passed', 'Level TOCFL tertinggi yang sudah kamu lulus')) : ''}
       ${radio('lama', P.lama, T('How long have you studied Chinese?', 'Sudah berapa lama belajar Mandarin?'))}
       ${radio('rencana', P.rencana, T('When do you plan to take the TOCFL?', 'Kapan rencana mengikuti TOCFL?'))}
-      <div class="field-k">${T('Choose the level you will study in this trial', 'Pilih level yang akan kamu pelajari di uji coba ini')}</div>
-      <div class="mode-list">${['A0', 'A1', 'A2'].map(l => `
-        <button class="card mode-card lv-card ${p.level === l ? 'on' : ''}" onclick="Studi.pf('level', '${l}')"><b class="lv-badge">${l}</b>
-          <div><span>${esc(Q.level[l])}</span></div><b class="lv-cek">${p.level === l ? '✓' : ''}</b></button>`).join('')}</div>
-      <p class="hint">${T('Not sure? Choose the level where most of the descriptions fit you. The level cannot be changed after the first questionnaire.', 'Ragu? Pilih level yang deskripsinya paling cocok denganmu. Level tidak bisa diganti setelah kuesioner awal.')}</p>
+      <div class="field-k">${T('Your starting level in this trial', 'Level awalmu di uji coba ini')}</div>
+      ${lv === 'lewat' ? `<div class="panel"><p>${T('You have already passed A2 or higher. This trial module only covers levels A0–A2, so it is not meant for you. Thank you for your interest! 謝謝！', 'Kamu sudah lulus A2 atau lebih tinggi. Modul uji coba ini hanya mencakup level A0–A2, jadi tidak ditujukan untukmu. Terima kasih atas minatmu! 謝謝！')}</p></div>`
+        : lv ? `<div class="mode-list"><div class="card mode-card lv-card on"><b class="lv-badge">${lv}</b><div><span>${esc(Q.level[lv])}</span></div><b class="lv-cek">✓</b></div></div>`
+        : `<p class="hint">${T('Answer the questions above first.', 'Jawab pertanyaan di atas dulu.')}</p>`}
+      <p class="hint">${T('The level is set automatically: if you passed TOCFL A1, you start at A2; otherwise you start at the level of your self-assessment. After finishing, you may continue to the next level (up to A2). The level cannot be changed after the first questionnaire.',
+                          'Level ditentukan otomatis: jika sudah lulus TOCFL A1, kamu langsung mulai di A2; jika belum, kamu mulai dari level penilaian dirimu. Setelah selesai, kamu boleh lanjut ke level berikutnya (sampai A2). Level tidak bisa diganti setelah kuesioner awal.')}</p>
       <div class="checks"><label><input type="checkbox" id="p-setuju" ${p.setuju ? 'checked' : ''} onchange="Studi.pf('setuju', this.checked, true)">
         ${T('I agree to take part, and that my answers, scores and progress in this app are sent to the researcher.', 'Saya bersedia ikut, dan setuju jawaban, nilai, serta progres saya di app ini dikirim ke peneliti.')}</label></div>
       <button class="btn primary block" onclick="Studi.simpanProfil()">${T('Save and continue', 'Simpan dan lanjut')} ›</button>`);
+  },
+  /* Aturan level awal (peneliti): sudah lulus TOCFL A1 → langsung A2; lulus A2 ke atas → bukan sasaran modul;
+     belum pernah / belum lulus A1 → mulai dari penilaian diri (mandarin: 0 A0 · 1 A1 · 2 A2), lalu boleh lanjut naik. */
+  levelAwal(p) {
+    if (p.pernah === 0 && p.lulus === 2) return 'lewat';
+    if (p.pernah === 0 && p.lulus === 1) return 'A2';
+    if (p.pernah == null || (p.pernah === 0 && p.lulus == null) || p.mandarin == null) return null;
+    return this.PILIHAN().mandarin[p.mandarin];
   },
   pf(k, v, diam) {
     const s = this.get();
@@ -201,11 +212,14 @@ const Studi = {
   simpanProfil() {
     const p = Object.assign({}, this.get().profilDraf || this.get().profil || {});
     p.nama = (document.getElementById('p-nama').value || '').trim();
-    const kurang = ['usia', 'negara', 'mandarin', 'pernah', 'lama', 'rencana'].filter(k => p[k] == null);
+    if (p.pernah !== 0) delete p.lulus;
+    const kurang = ['usia', 'negara', 'mandarin', 'pernah', 'lama', 'rencana', ...(p.pernah === 0 ? ['lulus'] : [])].filter(k => p[k] == null);
     if (!p.nama) return App.toast(T('Enter your name or initials.', 'Isi nama atau inisialmu.'));
     const admin = p.nama.toLowerCase() === 'admin';
     if (kurang.length && !admin) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
-    if (!p.level) return App.toast(T('Choose a level.', 'Pilih level dulu.'));
+    p.level = admin ? (this.levelAwal(p) || 'A0') : this.levelAwal(p);
+    if (p.level === 'lewat') return App.toast(T('This trial only covers A0–A2.', 'Uji coba ini hanya untuk A0–A2.'));
+    if (!p.level) return App.toast(T('Answer all the questions.', 'Jawab semua pertanyaan dulu.'));
     if (!p.setuju && !admin) return App.toast(T('Tick the consent box first.', 'Centang persetujuan dulu.'));
     this.set({ profil: p, profilDraf: null, level: p.level, mulai: this.get().mulai || Date.now(), lang: LANG });
     this.uid();
@@ -326,6 +340,7 @@ const Studi = {
     };
     return {
       v: 'mini1', uid: this.kode(), uid_asal: this.uid(), putaran: this.putaran(), nama: s.profil?.nama || '', lang: s.lang || LANG, level: s.level || '',
+      level_awal: s.arsip?.[0]?.level || s.level || '',
       profil: s.profil ? Object.fromEntries(Object.entries(this.PILIHAN()).map(([k, o]) => [k, o[s.profil[k]] ?? ''])) : {},
       mulai: s.mulai || null, selesai: s.selesai || null, waktu: new Date().toISOString(),
       perangkat: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'HP' : 'Komputer',
