@@ -178,6 +178,9 @@ const Studi = {
               'Modul ini bagian dari penelitian thesis tentang bagaimana bahan ajar dapat mengurangi kecemasan menghadapi ujian TOCFL. Kamu akan mengisi kuesioner dan tes singkat sebelum dan sesudah mempelajari 6 bab. Jawabanmu hanya dipakai untuk penelitian; namamu tidak dipublikasikan.')}</p></div>
       <label class="field-k" for="p-nama">${T('Name or initials', 'Nama atau inisial')}</label>
       <input id="p-nama" class="field" maxlength="60" value="${esc(p.nama || '')}" oninput="Studi.pf('nama', this.value, true)">
+      <label class="field-k" for="p-email">${T('Active email address', 'Email aktif')}</label>
+      <input id="p-email" class="field" type="email" inputmode="email" autocomplete="email" maxlength="100" value="${esc(p.email || '')}" oninput="Studi.pf('email', this.value, true)">
+      <p class="hint">${T('Only used by the researcher to contact you, e.g. if you have not finished the trial yet. It is never published.', 'Hanya dipakai peneliti untuk menghubungimu, misalnya jika uji coba belum selesai. Tidak dipublikasikan.')}</p>
       ${radio('usia', P.usia, T('Age', 'Usia'))}
       ${radio('negara', P.negara, T('Nationality', 'Kewarganegaraan'))}
       ${radio('mandarin', P.mandarin, T('Your current Chinese level (self-assessment)', 'Kemampuan Mandarin saat ini (penilaian diri)'))}
@@ -192,7 +195,7 @@ const Studi = {
       <p class="hint">${T('The level is set automatically: if you passed TOCFL A1, you start at A2; otherwise you start at the level of your self-assessment. After finishing, you may continue to the next level (up to A2). The level cannot be changed after the first questionnaire.',
                           'Level ditentukan otomatis: jika sudah lulus TOCFL A1, kamu langsung mulai di A2; jika belum, kamu mulai dari level penilaian dirimu. Setelah selesai, kamu boleh lanjut ke level berikutnya (sampai A2). Level tidak bisa diganti setelah kuesioner awal.')}</p>
       <div class="checks"><label><input type="checkbox" id="p-setuju" ${p.setuju ? 'checked' : ''} onchange="Studi.pf('setuju', this.checked, true)">
-        ${T('I agree to take part, and that my answers, scores and progress in this app are sent to the researcher.', 'Saya bersedia ikut, dan setuju jawaban, nilai, serta progres saya di app ini dikirim ke peneliti.')}</label></div>
+        ${T('I agree to take part, and that my answers, scores, progress and email address are sent to the researcher.', 'Saya bersedia ikut, dan setuju jawaban, nilai, progres, serta email saya di app ini dikirim ke peneliti.')}</label></div>
       <button class="btn primary block" onclick="Studi.simpanProfil()">${T('Save and continue', 'Simpan dan lanjut')} ›</button>`);
   },
   /* Aturan level awal (peneliti): sudah lulus TOCFL A1 → langsung A2; lulus A2 ke atas → bukan sasaran modul;
@@ -215,6 +218,8 @@ const Studi = {
     const kurang = ['usia', 'negara', 'mandarin', 'pernah', 'lama', 'rencana', ...(p.pernah === 0 ? ['lulus'] : [])].filter(k => p[k] == null);
     if (!p.nama) return App.toast(T('Enter your name or initials.', 'Isi nama atau inisialmu.'));
     if (p.nama.toLowerCase() === 'admin') return this.masukAdmin(p);   // nama "admin" → langsung mode admin
+    p.email = (document.getElementById('p-email').value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) return App.toast(T('Enter a valid email address.', 'Isi alamat email yang benar.'));
     if (kurang.length) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
     p.level = this.levelAwal(p);
     if (p.level === 'lewat') return App.toast(T('This trial only covers A0–A2.', 'Uji coba ini hanya untuk A0–A2.'));
@@ -339,7 +344,8 @@ const Studi = {
     };
     return {
       v: 'mini1', uid: this.kode(), uid_asal: this.uid(), putaran: this.putaran(), nama: s.profil?.nama || '', lang: s.lang || LANG, level: s.level || '',
-      level_awal: s.arsip?.[0]?.level || s.level || '',
+      level_awal: s.arsip?.[0]?.level || s.level || '', email: s.profil?.email || '',
+      posisi: s.posisi ? `${s.posisi.kode} · ${s.posisi.tahap}/6` : '', aktif: s.posisi?.waktu || null,
       profil: s.profil ? Object.fromEntries(Object.entries(this.PILIHAN()).map(([k, o]) => [k, o[s.profil[k]] ?? ''])) : {},
       mulai: s.mulai || null, selesai: s.selesai || null, waktu: new Date().toISOString(),
       perangkat: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'HP' : 'Komputer',
@@ -417,6 +423,17 @@ Modul.finish = function () {
   App.go('#/');
 };
 App.renderHome = () => Studi.renderHome();
+// Progres di dalam bab ikut terkirim: setiap kali peserta mencapai tahap BARU (bukan sekadar bolak-balik),
+// posisi terakhir dicatat & dikirim (ditunda 3 detik supaya pindah tahap cepat-cepat hanya terkirim sekali).
+const _modOpen = Modul.open;
+Modul.open = function (code, stage) {
+  const before = App.getP(code).stage;
+  _modOpen.call(this, code, stage);
+  const after = App.getP(code).stage;
+  if (Studi.admin() || !Studi.mods().some(m => m.code === code) || (before != null && after <= before)) return;
+  Studi.set({ posisi: { kode: code, tahap: after + 1, waktu: Date.now() } });
+  clearTimeout(Studi._tunda); Studi._tunda = setTimeout(() => Studi.kirimDiam(), 3000);
+};
 
 // Tes awal/akhir memakai mesin Ujian; paragraf Part 4 bernomor per titik kosong seperti naskah
 Ujian.w = function (t) { const k = this.session.kind; return (this.session.full || k === 'pre' || k === 'post') && t.type === 'cloze' ? t.answers.length : 1; };

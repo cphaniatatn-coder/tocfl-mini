@@ -295,5 +295,9 @@ window.VI_UI = {
 "Answer the questions above first.": "Hãy trả lời các câu hỏi ở trên trước.",
 "The level is set automatically: if you passed TOCFL A1, you start at A2; otherwise you start at the level of your self-assessment. After finishing, you may continue to the next level (up to A2). The level cannot be changed after the first questionnaire.": "Cấp độ được xác định tự động: nếu bạn đã đỗ TOCFL A1, bạn bắt đầu ở A2; nếu chưa, bạn bắt đầu ở cấp độ bạn tự đánh giá. Sau khi hoàn thành, bạn có thể học tiếp cấp độ tiếp theo (đến A2). Không thể đổi cấp độ sau bảng hỏi đầu tiên.",
 "This trial only covers A0–A2.": "Thử nghiệm này chỉ dành cho A0–A2.",
-"Answer all the questions.": "Hãy trả lời tất cả các câu hỏi."
+"Answer all the questions.": "Hãy trả lời tất cả các câu hỏi.",
+"Active email address": "Email đang sử dụng",
+"Only used by the researcher to contact you, e.g. if you have not finished the trial yet. It is never published.": "Chỉ người nghiên cứu dùng để liên hệ với bạn, ví dụ khi bạn chưa hoàn thành thử nghiệm. Không bao giờ được công bố.",
+"I agree to take part, and that my answers, scores, progress and email address are sent to the researcher.": "Tôi đồng ý tham gia, và đồng ý rằng câu trả lời, điểm, tiến độ và email của tôi được gửi đến người nghiên cứu.",
+"Enter a valid email address.": "Hãy nhập địa chỉ email hợp lệ."
 };
