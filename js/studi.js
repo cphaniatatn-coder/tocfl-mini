@@ -136,6 +136,8 @@ const Studi = {
         ${App.ring(Math.round(Math.min(L, 7) / 7 * 100), `${Math.min(L, 7)}<small>/7</small>`, 'ring-lg')}
       </section>
       ${adm ? this.adminPanel() : ''}
+      ${!s.profil ? `<button class="card mode-card ptj-kartu" onclick="Studi.bukaPetunjuk()">${Pic.html('❓', 'mode-ic')}
+        <div><b>${T('Read the instructions first', 'Baca petunjuk dulu')}</b><span>${T('1 minute · how the trial works and the rules for the tests', '1 menit · cara kerja uji coba dan aturan tes')}</span></div><span class="chev">›</span></button>` : ''}
       <div class="mode-list">
         ${row(0, '🪪', T('1 · About you & your level', '1 · Data diri & level'), s.profil ? `${esc(s.profil.nama)} · ${s.level}` : T('± 3 min', '± 3 menit'), '#/studi/profil')}
         ${row(1, '📋', T('2 · Questionnaire (before)', '2 · Kuesioner (awal)'), T('20 statements about exam anxiety · ± 5 min', '20 pernyataan tentang kecemasan ujian · ± 5 menit'), '#/studi/skala/pre')}
@@ -397,6 +399,38 @@ const Studi = {
     catch { this.set({ gagalKirim: true }); st.textContent = T('Sending failed. Check your internet connection, then try again.', 'Gagal mengirim. Periksa koneksi internet, lalu coba lagi.'); btn.disabled = false; }
   },
 
+  /* ===== Petunjuk peserta (tombol ? di bar atas) ===== */
+  bukaPetunjuk() { if (!location.hash.startsWith('#/petunjuk')) this._dari = location.hash || '#/'; App.go('#/petunjuk'); },
+  renderPetunjuk() {
+    App.bar(T('Instructions', 'Petunjuk'), this._dari || '#/');
+    const li = xs => xs.map(x => `<li>${x}</li>`).join('');
+    const langkah = [
+      [T('About you', 'Data diri'), T('Your level is set automatically from your answers.', 'Levelmu ditentukan otomatis dari jawabanmu.'), '± 3 min'],
+      [T('Questionnaire before', 'Kuesioner awal'), '', '± 5 min'],
+      [T('Pre-test', 'Tes awal'), '', '30 min', 1],
+      [T('Study 6 units', 'Pelajari 6 bab'), T('Including the tasks and the unit test in each.', 'Termasuk tugas dan Tes Bab di tiap bab.'), ''],
+      [T('Questionnaire after', 'Kuesioner akhir'), '', '± 5 min'],
+      [T('Post-test', 'Tes akhir'), '', '30 min', 1],
+      [T('Your opinion of the module', 'Pendapatmu tentang modul'), '', ''],
+    ];
+    App.main(`
+      <div class="panel"><div class="panel-k">${Pic.html('📱', 'ic-sm')} ${T('Before you start', 'Sebelum mulai')}</div>
+        <ul class="ptj">${li([
+          T('Use <b>the same phone and the same browser</b> from start to finish. Your progress is saved on that phone.', 'Pakai <b>satu HP dan satu browser yang sama</b> dari awal sampai akhir. Progresmu tersimpan di HP itu.'),
+          T('<b>Do not clear your browser history</b> until you finish, and do not use Incognito/Private mode.', '<b>Jangan hapus riwayat browser</b> sampai selesai, dan jangan pakai mode Incognito/Private.'),
+          T('Enter your <b>real name or initials</b> and an <b>active email address</b>.', 'Tulis <b>nama atau inisial asli</b> dan <b>email aktif</b> yang benar.'),
+          T('Have <b>earphones</b> ready for the listening questions.', 'Siapkan <b>earphone</b>, karena ada soal mendengarkan.')])}</ul></div>
+      <div class="panel"><div class="panel-k">${Pic.html('🧭', 'ic-sm')} ${T('Steps', 'Urutan langkah')}</div>
+        <ol class="ptj-langkah">${langkah.map(([j, n, w, tes]) => `<li class="${tes ? 'tes' : ''}"><span><b>${j}</b>${n ? `<small>${n}</small>` : ''}</span><span class="ptj-w">${w}</span></li>`).join('')}</ol></div>
+      <div class="panel ptj-aturan"><div class="panel-k">${Pic.html('⚠️', 'ic-sm')} ${T('During the pre-test and post-test', 'Saat tes awal dan tes akhir')}</div>
+        <ul class="ptj">${li([
+          T('Sit somewhere quiet without interruptions for 30 minutes.', 'Kerjakan di tempat yang tenang, tanpa gangguan selama 30 menit.'),
+          T('The audio button can be pressed <b>once</b>; the audio then plays <b>twice automatically</b>.', 'Tombol audio hanya bisa ditekan <b>sekali</b>, lalu audio diputar <b>2× otomatis</b>.'),
+          T('Tests and questionnaires <b>cannot be repeated</b>. Answer honestly and on your own.', 'Tes dan kuesioner <b>tidak bisa diulang</b>. Jawablah dengan jujur dan dengan kemampuanmu sendiri.')])}</ul></div>
+      <p class="hint">${T('Your results are sent to the researcher automatically (internet needed). When you finish, you may continue to the next level, but it is optional.', 'Hasilmu terkirim otomatis ke peneliti (butuh internet). Setelah selesai, kamu boleh lanjut ke level berikutnya, tapi tidak wajib.')}</p>
+      <button class="btn primary block" onclick="App.go('${this._dari || '#/'}')">${T('Got it', 'Mengerti')} ✓</button>`);
+  },
+
   /* ===== Kata pendukung: kata di dialog/soal yang diajarkan di bab yang tidak ikut uji coba ===== */
   pendukungHTML(m) {
     const list = m.vocab.pendukung || [];
@@ -537,7 +571,15 @@ Soal.body = function (t, key, a, ns, mode) {
 };
 Speech.speedUI = function () { return tocflAktif() ? '' : _speedUI.call(this); };
 
-// Rute tambahan: #/studi/profil · #/studi/skala/pre|post · #/studi/tes/pre|post · #/studi/eval · #/kirim
+// Tombol ? (petunjuk) di bar atas semua halaman — disembunyikan selama tes awal/akhir/Tes Bab berjalan
+const _bar = App.bar;
+App.bar = function (title, back, extra = '') {
+  const tes = location.hash.startsWith('#/ujian') && Ujian.session && Ujian.session.phase !== 'result';
+  const tombol = tes || location.hash.startsWith('#/petunjuk') ? '' : `<button class="bar-pill bar-help" onclick="Studi.bukaPetunjuk()" aria-label="${T('Instructions', 'Petunjuk')}" title="${T('Instructions', 'Petunjuk')}">?</button>`;
+  return _bar.call(this, title, back, extra + tombol);
+};
+
+// Rute tambahan: #/petunjuk · #/studi/profil · #/studi/skala/pre|post · #/studi/tes/pre|post · #/studi/eval · #/kirim
 const _route = App.route;
 App.route = async function () {
   if (!Lang.dipilih) return Studi.renderBahasa();
@@ -552,6 +594,7 @@ App.route = async function () {
     return App.go('#/');
   }
   if (p[0] === 'kirim') { Speech.stop(); return Studi.renderKirim(); }
+  if (p[0] === 'petunjuk') { Speech.stop(); return Studi.renderPetunjuk(); }
   // Bab hanya terbuka setelah tes awal, dan hanya bab level peserta; peta volume tidak dipakai (beranda = peta)
   if (p[0] === 'm' && ((!Studi.admin() && Studi.langkah() < 3) || !Studi.mods().some(m => m.code === p[1]))) return App.go('#/');
   if (p[0] === 'v' && p[2] !== 'kata') return App.go('#/');
