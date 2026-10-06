@@ -5,7 +5,7 @@
 
 const STUDI_KEY = 'tocflmini_studi';
 const LEVEL_VOL = { A0: 1, A1: 2, A2: 3 };
-const KIRIM_URL = "https://script.google.com/macros/s/AKfycbyl87lyjSq1yJa87ER57anPZ87C4jLA2c_y9UO3kIjWqMOFFFeT19oBI9c0CQsI59Y/exec";   // ← diisi lewat _kerja/mini/config.json (kirim_url) saat buat_mini.py dijalankan
+const KIRIM_URL = "https://script.google.com/macros/s/AKfycbzYhXhgPPIw8ybAZ3LE6FU7SmvOmETQ7CETFaS677ByLorLnsFKM-3Lo2ABzAnMLPEH/exec";   // ← diisi lewat _kerja/mini/config.json (kirim_url) saat buat_mini.py dijalankan
 
 const Studi = {
   data: null,
