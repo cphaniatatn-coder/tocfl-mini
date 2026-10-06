@@ -319,5 +319,6 @@ window.VI_UI = {
 "Sit somewhere quiet without interruptions for 30 minutes.": "Làm ở nơi yên tĩnh, không bị gián đoạn trong 30 phút.",
 "The audio button can be pressed <b>once</b>; the audio then plays <b>twice automatically</b>.": "Nút âm thanh chỉ bấm được <b>một lần</b>, âm thanh tự phát <b>2 lần</b>.",
 "Tests and questionnaires <b>cannot be repeated</b>. Answer honestly and on your own.": "Bài kiểm tra và bảng hỏi <b>không làm lại được</b>. Hãy trả lời trung thực bằng khả năng của mình.",
-"Your results are sent to the researcher automatically (internet needed). When you finish, you may continue to the next level, but it is optional.": "Kết quả tự động gửi cho người nghiên cứu (cần internet). Khi xong, bạn có thể học tiếp cấp độ tiếp theo, nhưng không bắt buộc."
+"Your results are sent to the researcher automatically (internet needed). When you finish, you may continue to the next level, but it is optional.": "Kết quả tự động gửi cho người nghiên cứu (cần internet). Khi xong, bạn có thể học tiếp cấp độ tiếp theo, nhưng không bắt buộc.",
+"Questions? Contact the researcher:": "Thắc mắc? Liên hệ người nghiên cứu:"
 };
