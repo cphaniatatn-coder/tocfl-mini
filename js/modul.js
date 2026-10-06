@@ -392,18 +392,19 @@ const Modul = {
   /* ---------- 語法: balok Lego ---------- */
   r_grammar() {
     const gc = App.getP(this.m.code).gchecks || {};
+    const bab = (this.m.catatan || []).map(c => this.catatanHTML(c)).join('');   // catatan tingkat bab (modul mini)
     if (!this.m.grammar.length) return `
       <div class="panel"><div class="panel-k">${T('No new pattern in this scene', 'Tidak ada pola baru di adegan ini')}</div>
         <p>${T('This scene only adds vocabulary, on purpose. Patterns you reuse here:', 'Adegan ini sengaja hanya menambah kosakata. Pola yang kamu pakai ulang:')}</p>
         <ul class="examples">${(this.m.recycle || []).map((r, i) => `<li><span lang="zh-TW">${esc(r.zh)}</span>
-          <button class="say-btn" onclick="Speech.say(Modul.m.recycle[${i}].zh)">${Pic.html('🔊', 'ic-xs')}</button><small>${esc(r.id)}</small></li>`).join('')}</ul></div>`;
+          <button class="say-btn" onclick="Speech.say(Modul.m.recycle[${i}].zh)">${Pic.html('🔊', 'ic-xs')}</button><small>${esc(r.id)}</small></li>`).join('')}</ul></div>${bab}`;
     return `<p class="hint">${T('You have already used these patterns in the dialogue & tasks. Now let us take the blocks apart.', 'Pola ini sudah kamu pakai di dialog & tugas. Sekarang kita bongkar susunan baloknya.')}</p>
       ${this.m.grammar.map((g, gi) => `
       <article class="gcard">
         <div class="gcard-head"><span class="gid">TBCL #${g.tbcl_id}</span><h3 lang="zh-TW">${esc(g.point)}</h3></div>
         <div class="blocks" lang="zh-TW">${g.blocks.map(([w, role], bi) => `<span class="block r${bi % 5}"><b>${esc(w)}</b><small>${esc(role)}</small></span>`).join('')}</div>
         <div class="pattern">${T('Pattern', 'Pola')}: <code lang="zh-TW">${esc(g.pattern)}</code></div>
-        <p>${esc(g.explain)}</p>
+        <p>${esc(g.explain)}</p>${g.catatan ? this.catatanHTML(g.catatan) : ''}
         <ul class="examples">${g.examples.map((e, ei) => `<li><span lang="zh-TW">${esc(e.zh)}</span>
           <button class="say-btn" onclick="Speech.say(Modul.m.grammar[${gi}].examples[${ei}].zh)" aria-label="${T('Listen', 'Dengarkan')}">${Pic.html('🔊', 'ic-xs')}</button>
           <small>${esc(e.id)}</small></li>`).join('')}</ul>
@@ -412,7 +413,13 @@ const Modul = {
             const a = gc[gi], cls = a != null ? (oi === g.check.answer ? 'right' : oi === a ? 'wrong' : 'dim') : '';
             return `<button class="opt ${cls}" ${a != null ? 'disabled' : `onclick="Modul.gcheck(${gi}, ${oi})"`}><span lang="zh-TW">${esc(o)}</span></button>`;
           }).join('')}</div></div>
-      </article>`).join('')}`;
+      </article>`).join('')}${bab}`;
+  },
+  // Catatan tambahan dari buku rujukan grammar (hanya ada di data modul mini): {point?, rujukan, note: [...]}
+  catatanHTML(c) {
+    return `<div class="gnote"><div class="panel-k">${Pic.html('📘', 'ic-sm')} ${c.point ? `<b>${esc(c.point)}</b>` : T('Notes from the grammar book', 'Catatan dari buku grammar')}</div>
+      <ul>${c.note.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+      <small>${T('Source', 'Sumber')}: 《看圖學中文語法・基礎篇》 ${esc(c.rujukan)}</small></div>`;
   },
   gcheck(gi, oi) { const gc = App.getP(this.m.code).gchecks || {}; gc[gi] = oi; this.keepScroll(() => App.setP(this.m.code, { gchecks: gc })); },
 

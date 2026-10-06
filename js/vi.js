@@ -278,5 +278,7 @@ window.VI_UI = {
 "audio plays 2× automatically (one tap)": "âm thanh tự phát 2 lần (bấm một lần)",
 "The audio has already been played (2× automatically) and cannot be repeated.": "Âm thanh đã được phát (tự động 2 lần) và không thể phát lại.",
 "played 2×": "đã phát 2 lần",
-"playing {0}/2": "đang phát {0}/2"
+"playing {0}/2": "đang phát {0}/2",
+"Notes from the grammar book": "Ghi chú từ sách ngữ pháp",
+"Source": "Nguồn"
 };
