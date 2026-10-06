@@ -23,6 +23,32 @@ const Studi = {
     this.set({ uid });
     return uid;
   },
+  /* Putaran: peserta yang selesai & hasilnya terkirim boleh lanjut ke level di atasnya (A0 → A1 → A2).
+     Putaran 1 = data utama tesis. Putaran ≥ 2 dikirim dengan kode peserta + "-P2", "-P3"… sehingga
+     menjadi baris terpisah di Sheet (putaran 1 tidak tertimpa) dan mudah dipisahkan saat analisis. */
+  putaran() { return this.get().putaran || 1; },
+  kode() { const n = this.putaran(); return n > 1 ? `${this.uid()}-P${n}` : this.uid(); },
+  levelBerikut() { return { A0: 'A1', A1: 'A2' }[this.get().level] || null; },
+  bisaLanjut() {
+    const s = this.get();
+    return !!this.levelBerikut() && this.langkah() === 7 && (this.admin() || (!!s.terkirim && s.terkirim >= (s.selesai || 0)));
+  },
+  lanjutLevel() {
+    const s = this.get(), next = this.levelBerikut();
+    if (!this.bisaLanjut()) return;
+    if (!confirm(T(`Start level ${next}? You will do a new pre-test, 6 units, post-test and questionnaires for ${next}. Your ${s.level} results are already saved and sent.`,
+                   `Mulai level ${next}? Kamu akan mengerjakan tes awal, 6 bab, tes akhir, dan kuesioner yang baru untuk ${next}. Hasil ${s.level} sudah tersimpan dan terkirim.`))) return;
+    const arsip = (s.arsip || []).concat([{ putaran: this.putaran(), kode: this.kode(), level: s.level, mulai: s.mulai, selesai: s.selesai, terkirim: s.terkirim, pre: s.pre, post: s.post }]);
+    this.set({ arsip, putaran: this.putaran() + 1, level: next, pre: null, post: null, selesai: null, terkirim: null, gagalKirim: false, mulai: Date.now() });
+    App.go('#/'); this.renderHome();
+  },
+  lanjutHTML() {
+    if (!this.bisaLanjut()) return '';
+    const s = this.get(), next = this.levelBerikut();
+    return `<button class="card continue lanjut-lv" onclick="Studi.lanjutLevel()">${Pic.html('📈', 'mode-ic')}
+      <div class="continue-txt"><small>${T('Optional', 'Pilihan tambahan')}</small><b>${T(`Continue to level ${next}`, `Lanjut ke level ${next}`)}</b>
+      <span>${T(`You have finished ${s.level}. Want to go on? New pre-test, 6 units of ${next} and post-test.`, `Kamu sudah menyelesaikan ${s.level}. Mau lanjut? Tes awal baru, 6 bab ${next}, lalu tes akhir.`)}</span></div><span class="chev">›</span></button>`;
+  },
   vol() { return LEVEL_VOL[this.get().level]; },
   mods() { return this.vol() ? App.plan[this.vol()] : []; },
   nDone() { return this.mods().filter(m => App.getP(m.code).done).length; },
@@ -106,7 +132,7 @@ const Studi = {
     App.main(`
       <section class="hero">
         <div><h1>華語文能力測驗</h1>
-          <p>${s.level ? T(`Trial module · level ${s.level} · 6 units`, `Modul uji coba · level ${s.level} · 6 bab`) : T('Trial module for TOCFL Band A preparation.', 'Modul uji coba persiapan TOCFL Band A.')}</p></div>
+          <p>${s.level ? T(`Trial module · level ${s.level} · 6 units`, `Modul uji coba · level ${s.level} · 6 bab`) + (this.putaran() > 1 ? ` · ${T('round', 'putaran')} ${this.putaran()}` : '') : T('Trial module for TOCFL Band A preparation.', 'Modul uji coba persiapan TOCFL Band A.')}</p></div>
         ${App.ring(Math.round(Math.min(L, 7) / 7 * 100), `${Math.min(L, 7)}<small>/7</small>`, 'ring-lg')}
       </section>
       ${adm ? this.adminPanel() : `<button class="card mode-card admin-masuk" onclick="Studi.masukAdmin()">${Pic.html('🔧', 'mode-ic')}
@@ -127,6 +153,7 @@ const Studi = {
       ${L >= 1 ? `<button class="card continue" onclick="App.go('#/kirim')">${Pic.html('📤', 'mode-ic')}
         <div class="continue-txt"><small>${T('Results', 'Hasil')}</small><b>${L === 7 ? T('Finished — thank you!', 'Selesai — terima kasih!') : T('Sending status', 'Status pengiriman')}</b>
         <span>${s.terkirim ? `${T('Last sent', 'Terakhir terkirim')}: ${new Date(s.terkirim).toLocaleString(Lang.LOCALE)}` : T('Not sent yet', 'Belum terkirim')}</span></div><span class="chev">›</span></button>` : ''}
+      ${this.lanjutHTML()}
       <p class="credit">${T('Illustrations: Twemoji © Twitter/X &amp; contributors, licensed CC-BY 4.0. Black-and-white question images: OpenMoji (openmoji.org), licensed CC BY-SA 4.0.', 'Ilustrasi: Twemoji © Twitter/X &amp; kontributor, lisensi CC-BY 4.0. Gambar soal hitam-putih: OpenMoji (openmoji.org), lisensi CC BY-SA 4.0.')}</p>`);
   },
 
@@ -141,7 +168,7 @@ const Studi = {
   }),
   renderProfil() {
     const s = this.get(), p = s.profilDraf || s.profil || {}, P = this.PILIHAN(), Q = this.data.kuesioner;
-    if (s.pre?.cemas) return App.go('#/');   // data diri & level dikunci setelah kuesioner awal
+    if (s.pre?.cemas || this.putaran() > 1) return App.go('#/');   // data diri & level dikunci setelah kuesioner awal / di putaran lanjutan
     App.bar(T('About you', 'Data diri'), '#/');
     const radio = (k, opts, judul) => `<div class="field-k">${judul}</div>
       <div class="seg wrap" role="radiogroup">${opts.map((o, i) => `<button class="${p[k] === i ? 'on' : ''}" onclick="Studi.pf('${k}', ${i})">${esc(o)}</button>`).join('')}</div>`;
@@ -298,7 +325,7 @@ const Studi = {
       return { cemas: d.cemas || null, cemas_skor: this.skorCemas(d.cemas), cemas_waktu: d.cemasWaktu || null, tes: d.tes || null, tes_coba: d.tesCoba || 0 };
     };
     return {
-      v: 'mini1', uid: this.uid(), nama: s.profil?.nama || '', lang: s.lang || LANG, level: s.level || '',
+      v: 'mini1', uid: this.kode(), uid_asal: this.uid(), putaran: this.putaran(), nama: s.profil?.nama || '', lang: s.lang || LANG, level: s.level || '',
       profil: s.profil ? Object.fromEntries(Object.entries(this.PILIHAN()).map(([k, o]) => [k, o[s.profil[k]] ?? ''])) : {},
       mulai: s.mulai || null, selesai: s.selesai || null, waktu: new Date().toISOString(),
       perangkat: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'HP' : 'Komputer',
@@ -338,9 +365,10 @@ const Studi = {
         <p>${s.terkirim ? `${T('Last sent', 'Terakhir terkirim')}: ${new Date(s.terkirim).toLocaleString(Lang.LOCALE)}` : T('Not sent yet.', 'Belum terkirim.')}
         ${s.gagalKirim ? `<br><b>${T('The last attempt failed — check your internet connection and press the button below.', 'Pengiriman terakhir gagal — periksa koneksi internet lalu tekan tombol di bawah.')}</b>` : ''}</p>
         <p class="hint">${T('Your results are sent automatically after each step. You can also send them again here — the old data is updated, not duplicated.', 'Hasilmu terkirim otomatis setelah tiap langkah. Kamu juga bisa mengirim ulang di sini — data lama diperbarui, tidak dobel.')}</p>
-        <p class="hint">${T('Participant code', 'Kode peserta')}: <b>${this.uid()}</b></p></div>
+        <p class="hint">${T('Participant code', 'Kode peserta')}: <b>${this.kode()}</b></p></div>
       <button class="btn primary block" id="k-btn" onclick="Studi.kirimTombol()">${Pic.html('📤', 'ic-sm')} ${T('Send results now', 'Kirim hasil sekarang')}</button>
-      <p class="hint" id="k-status"></p>`);
+      <p class="hint" id="k-status"></p>
+      ${this.lanjutHTML()}`);
   },
   async kirimTombol() {
     const btn = document.getElementById('k-btn'), st = document.getElementById('k-status');

@@ -281,5 +281,10 @@ window.VI_UI = {
 "playing {0}/2": "đang phát {0}/2",
 "Notes from the grammar book": "Ghi chú từ sách ngữ pháp",
 "Source": "Nguồn",
-"More practice": "Luyện tập thêm"
+"More practice": "Luyện tập thêm",
+"Start level {0}? You will do a new pre-test, 6 units, post-test and questionnaires for {1}. Your {2} results are already saved and sent.": "Bắt đầu cấp độ {0}? Bạn sẽ làm bài kiểm tra đầu vào mới, 6 bài, bài kiểm tra cuối và các bảng hỏi cho {1}. Kết quả {2} của bạn đã được lưu và gửi.",
+"Optional": "Tùy chọn",
+"Continue to level {0}": "Tiếp tục lên cấp độ {0}",
+"You have finished {0}. Want to go on? New pre-test, 6 units of {1} and post-test.": "Bạn đã hoàn thành {0}. Muốn học tiếp không? Bài kiểm tra đầu vào mới, 6 bài {1} và bài kiểm tra cuối.",
+"round": "vòng"
 };
