@@ -52,12 +52,12 @@ const Studi = {
   vol() { return LEVEL_VOL[this.get().level]; },
   mods() { return this.vol() ? App.plan[this.vol()] : []; },
   nDone() { return this.mods().filter(m => App.getP(m.code).done).length; },
-  // Mode admin (tombol Admin di beranda, atau nama "admin"): semua langkah terbuka, data tidak dikirim
+  // Mode admin (ketik nama "admin" di Data diri): semua langkah terbuka, data tidak dikirim
   admin() { const s = this.get(); return !!s.admin || (s.profil?.nama || '').toLowerCase() === 'admin'; },
-  masukAdmin() {
-    if (this.get().profil && !this.admin() && !confirm(T('This device already has participant data. Admin mode will replace it. Continue?', 'Perangkat ini sudah berisi data peserta. Mode admin akan menggantinya. Lanjut?'))) return;
-    Store.set(STUDI_KEY, { admin: true, profil: { nama: 'admin', pernah: 0 }, level: 'A0', mulai: Date.now(), lang: LANG });
-    this.renderHome();
+  masukAdmin(p = {}) {
+    const lv = this.levelAwal(p);
+    Store.set(STUDI_KEY, { admin: true, profil: { nama: 'admin', pernah: p.pernah ?? 0 }, level: lv && lv !== 'lewat' ? lv : 'A0', mulai: Date.now(), lang: LANG });
+    App.go('#/'); this.renderHome();
   },
   keluarAdmin() {
     if (!confirm(T('Leave admin mode? All admin answers and unit progress on this device will be deleted.', 'Keluar dari mode admin? Semua jawaban admin dan progres bab di perangkat ini akan dihapus.'))) return;
@@ -135,8 +135,7 @@ const Studi = {
           <p>${s.level ? T(`Trial module · level ${s.level} · 6 units`, `Modul uji coba · level ${s.level} · 6 bab`) + (this.putaran() > 1 ? ` · ${T('round', 'putaran')} ${this.putaran()}` : '') : T('Trial module for TOCFL Band A preparation.', 'Modul uji coba persiapan TOCFL Band A.')}</p></div>
         ${App.ring(Math.round(Math.min(L, 7) / 7 * 100), `${Math.min(L, 7)}<small>/7</small>`, 'ring-lg')}
       </section>
-      ${adm ? this.adminPanel() : `<button class="card mode-card admin-masuk" onclick="Studi.masukAdmin()">${Pic.html('🔧', 'mode-ic')}
-        <div><b>${T('Enter admin mode', 'Masuk mode admin')}</b><span>${T('Open every step without filling in the forms (for checking only)', 'Buka semua langkah tanpa mengisi form (hanya untuk mengecek)')}</span></div><span class="chev">›</span></button>`}
+      ${adm ? this.adminPanel() : ''}
       <div class="mode-list">
         ${row(0, '🪪', T('1 · About you & your level', '1 · Data diri & level'), s.profil ? `${esc(s.profil.nama)} · ${s.level}` : T('± 3 min', '± 3 menit'), '#/studi/profil')}
         ${row(1, '📋', T('2 · Questionnaire (before)', '2 · Kuesioner (awal)'), T('20 statements about exam anxiety · ± 5 min', '20 pernyataan tentang kecemasan ujian · ± 5 menit'), '#/studi/skala/pre')}
@@ -215,12 +214,12 @@ const Studi = {
     if (p.pernah !== 0) delete p.lulus;
     const kurang = ['usia', 'negara', 'mandarin', 'pernah', 'lama', 'rencana', ...(p.pernah === 0 ? ['lulus'] : [])].filter(k => p[k] == null);
     if (!p.nama) return App.toast(T('Enter your name or initials.', 'Isi nama atau inisialmu.'));
-    const admin = p.nama.toLowerCase() === 'admin';
-    if (kurang.length && !admin) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
-    p.level = admin ? (this.levelAwal(p) || 'A0') : this.levelAwal(p);
+    if (p.nama.toLowerCase() === 'admin') return this.masukAdmin(p);   // nama "admin" → langsung mode admin
+    if (kurang.length) return App.toast(T('Please answer all the questions.', 'Jawab semua pertanyaan dulu.'));
+    p.level = this.levelAwal(p);
     if (p.level === 'lewat') return App.toast(T('This trial only covers A0–A2.', 'Uji coba ini hanya untuk A0–A2.'));
     if (!p.level) return App.toast(T('Answer all the questions.', 'Jawab semua pertanyaan dulu.'));
-    if (!p.setuju && !admin) return App.toast(T('Tick the consent box first.', 'Centang persetujuan dulu.'));
+    if (!p.setuju) return App.toast(T('Tick the consent box first.', 'Centang persetujuan dulu.'));
     this.set({ profil: p, profilDraf: null, level: p.level, mulai: this.get().mulai || Date.now(), lang: LANG });
     this.uid();
     App.go('#/');
