@@ -502,6 +502,135 @@ Modul.retry = function () {
   return _modRetry.call(this);
 };
 
+/* ===== Tahap bab terbuka berurutan (hanya pada pengerjaan PERTAMA) =====
+   Tujuan → Dialog (semua kalimat sudah diputar) → Kosakata (semua kartu sudah dilihat) → Tugas (semua soal dijawab,
+   tanpa nilai minimum) → Grammar (Cek cepat & latihan dijawab, benar/salah tidak masalah) → Refleksi.
+   Setelah bab selesai (atau di mode admin) semua tahap bebas. Bagian yang belum dikerjakan diberi tanda oranye.
+   Syarat yang sudah terpenuhi disimpan di progres (lulus[tahap]) sehingga "Ulangi" tidak mengunci lagi. */
+const Tahap = {
+  bebas(code) { return Studi.admin() || !!App.getP(code).done; },
+  dialogBelum(m, p) { const d = p.dengar || {}, out = []; m.dialogs.forEach((x, di) => x.lines.forEach((_, li) => { if (!d[`${di}-${li}`]) out.push([di, li]); })); return out; },
+  kartuBelum(m, p) { const l = p.lihat || {}; return Modul.allVocab.call({ m }).filter(v => !l[v.w]); },
+  gramBelum(m, p) {
+    const gc = p.gchecks || {}, gl = p.glat || {}, out = [];
+    m.grammar.forEach((g, gi) => { if (g.check && gc[gi] == null) out.push(`c${gi}`); (g.latihan || []).forEach((_, li) => { if (gl[`${gi}-${li}`] == null) out.push(`${gi}-${li}`); }); });
+    (m.latihan || []).forEach((_, li) => { if (gl[`b-${li}`] == null) out.push(`b-${li}`); });
+    return out;
+  },
+  // [selesai?, sisa, total] untuk tahap 0–4 (tahap 5 = refleksi, diselesaikan dengan tombol Selesai)
+  status(m) {
+    const p = App.getP(m.code), lulus = p.lulus || {};
+    const nKal = m.dialogs.reduce((a, d) => a + d.lines.length, 0), nKar = Modul.allVocab.call({ m }).length;
+    const nGram = m.grammar.reduce((a, g) => a + (g.check ? 1 : 0) + (g.latihan || []).length, 0) + (m.latihan || []).length;
+    const st = [
+      [true, 0, 0],
+      [!!lulus[1], this.dialogBelum(m, p).length, nKal],
+      [!!lulus[2], this.kartuBelum(m, p).length, nKar],
+      [!!lulus[3] || !!p.tasks, 0, 0],
+      [!!lulus[4], this.gramBelum(m, p).length, nGram],
+    ];
+    st.forEach((x, i) => { if (!x[0] && i && i !== 3 && x[1] === 0) x[0] = true; });
+    const baru = {}; st.forEach((x, i) => { if (x[0] && !lulus[i]) baru[i] = 1; });
+    if (Object.keys(baru).length) App.setP(m.code, { lulus: Object.assign({}, lulus, baru) });
+    return st;
+  },
+  // tahap tertinggi yang boleh dibuka
+  batas(m) { if (this.bebas(m.code)) return 5; const st = this.status(m); let k = 0; while (k < 5 && st[k][0]) k++; return k; },
+  pesan(m, k) {
+    const st = this.status(m)[k] || [true, 0, 0];
+    return [null,
+      T(`Listen to every line first (tap ▶ Play or 🔊). Still to listen: ${st[1]} of ${st[2]} lines — marked in orange.`, `Dengarkan dulu setiap kalimat (tekan ▶ Putar atau 🔊). Belum didengar: ${st[1]} dari ${st[2]} kalimat — bertanda oranye.`),
+      T(`Open every word card once (use › to move). Still to open: ${st[1]} of ${st[2]} cards — the orange dots.`, `Buka setiap kartu kata sekali (pakai tombol ›). Belum dibuka: ${st[1]} dari ${st[2]} kartu — titik oranye.`),
+      T('Answer every question once. Your score does not need to be perfect.', 'Jawab semua soal sekali. Nilainya tidak harus sempurna.'),
+      T(`Answer the quick checks and the practice questions — right or wrong does not matter. Still open: ${st[1]} of ${st[2]}.`, `Jawab Cek cepat dan latihan — benar atau salah tidak masalah. Belum dijawab: ${st[1]} dari ${st[2]}.`)][k];
+  },
+};
+// Dialog: kalimat dihitung "sudah didengar" begitu diputar (▶ Putar, Baris berikutnya, atau 🔊) — juga bila audionya gagal
+const _speechLines = Speech.lines;
+Speech.lines = function (lines) {
+  try {
+    if (location.hash.startsWith('#/m/') && Modul.m && Modul.key() === 'dialog') {
+      const p = App.getP(Modul.m.code), d = Object.assign({}, p.dengar || {});
+      Modul.m.dialogs.forEach((x, di) => x.lines.forEach((l, li) => { if (lines.some(y => y === l || (y.zh === l.zh && y.sp === l.sp))) d[`${di}-${li}`] = 1; }));
+      App.setP(Modul.m.code, { dengar: d });
+      setTimeout(() => Tahap.tandai(), 0);
+    }
+  } catch (e) {}
+  return _speechLines.apply(this, arguments);
+};
+Tahap.tandai = function () {
+  const m = Modul.m; if (!m || !document.querySelector('.stage')) return;
+  const p = App.getP(m.code), bebas = this.bebas(m.code), st = this.status(m), batas = this.batas(m);
+  // penanda tahap: ✓ selesai · 🔒 terkunci
+  document.querySelectorAll('nav.steps .step').forEach((b, i) => {
+    b.classList.toggle('lulus', i < 5 ? st[i][0] : !!p.done);
+    b.classList.toggle('kunci', !bebas && i > batas);
+  });
+  if (bebas) return;
+  const k = Modul.key();
+  if (k === 'dialog') {
+    const d = p.dengar || {};
+    document.querySelectorAll('.stage-dialog .chat').forEach((c, di) => c.querySelectorAll('.msg').forEach((el, li) => el.classList.toggle('belum', !d[`${di}-${li}`])));
+  }
+  if (k === 'vocab') {
+    const l = p.lihat || {}, all = Modul.allVocab();
+    document.querySelectorAll('.stage-vocab .dots i').forEach((el, i) => el.classList.toggle('belum', !!all[i] && !l[all[i].w]));
+    document.querySelectorAll('.stage-vocab .vcell').forEach((el, i) => el.classList.toggle('belum', !!all[i] && !l[all[i].w]));
+  }
+  if (k === 'grammar') {
+    const sisa = new Set(this.gramBelum(m, p));
+    document.querySelectorAll('.stage-grammar .gcard').forEach((g, gi) => {
+      g.querySelector('.gcheck')?.classList.toggle('belum', sisa.has(`c${gi}`));
+      g.querySelectorAll('.glat-q').forEach((q, li) => q.classList.toggle('belum', sisa.has(`${gi}-${li}`)));
+    });
+    const bab = [...document.querySelectorAll('.stage-grammar .glat')].find(x => !x.closest('.gcard'));
+    bab?.querySelectorAll('.glat-q').forEach((q, li) => q.classList.toggle('belum', sisa.has(`b-${li}`)));
+  }
+  // keterangan syarat di bawah tahap (warna netral, bukan merah)
+  let box = document.querySelector('.syarat');
+  const idx = Modul.stage, txt = idx < 5 && !st[idx][0] ? this.pesan(m, idx) : '';
+  if (!txt) { box?.remove(); return; }
+  if (!box) { box = document.createElement('p'); box.className = 'syarat'; document.querySelector('.stage').appendChild(box); }
+  box.innerHTML = `${Pic.html('🧭', 'ic-sm')} ${txt}`;
+};
+const _modOpenT = Modul.open, _modRenderT = Modul.render, _modNext = Modul.next, _modGo = Modul.go;
+Modul.open = function (code, stage) {
+  const f = App.findModule(code);
+  if (f && !Tahap.bebas(code)) {
+    const b = Tahap.batas(f.m);
+    if ((stage || 0) > b) { App.toast(T('Finish the earlier stages first — this one opens after that.', 'Selesaikan tahap sebelumnya dulu — tahap ini terbuka setelah itu.')); return App.go(`#/m/${code}/${b}`); }
+  }
+  return _modOpenT.call(this, code, stage);
+};
+Modul.render = function () {
+  // Kosakata: kartu yang sedang tampil dihitung "sudah dilihat"
+  if (this.key() === 'vocab' && !this.vlist && !Tahap.bebas(this.m.code)) {
+    const all = this.allVocab(), v = all[Math.min(this.vi, all.length - 1)], p = App.getP(this.m.code);
+    if (v && !(p.lihat || {})[v.w]) App.setP(this.m.code, { lihat: Object.assign({}, p.lihat, { [v.w]: 1 }) });
+  }
+  const r = _modRenderT.call(this);
+  Tahap.tandai();
+  return r;
+};
+Modul.next = function () {
+  if (!Tahap.bebas(this.m.code) && this.stage < 5 && !Tahap.status(this.m)[this.stage][0]) {
+    App.toast(T('Almost there 🙂 ', 'Sedikit lagi 🙂 ') + Tahap.pesan(this.m, this.stage));
+    document.querySelector('.syarat')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (this.key() === 'intro') this.saveGoal();
+    return;
+  }
+  return _modNext.call(this);
+};
+Modul.go = function (i) {
+  if (!Tahap.bebas(this.m.code) && i > Tahap.batas(this.m)) return App.toast(T('This stage opens after you finish the earlier ones.', 'Tahap ini terbuka setelah tahap sebelumnya selesai.'));
+  return _modGo.call(this, i);
+};
+const _rIntro = Modul.r_intro;
+Modul.r_intro = function () {
+  const h = _rIntro.call(this);
+  return Tahap.bebas(this.m.code) ? h : h.replace(/<p class="hint">[^<]*<\/p>\s*$/, `<p class="hint">${T('The stages open one by one. When you finish this unit, all stages stay open and you can repeat anything as often as you like.', 'Tahap terbuka satu per satu. Setelah bab ini selesai, semua tahap terbuka bebas dan boleh diulang sesering yang kamu mau.')}</p>`);
+};
+
 // Tes awal/akhir memakai mesin Ujian; paragraf Part 4 bernomor per titik kosong seperti naskah
 Ujian.w = function (t) { const k = this.session.kind; return (this.session.full || k === 'pre' || k === 'post') && t.type === 'cloze' ? t.answers.length : 1; };
 const _finish = Ujian.finish, _result = Ujian.result;

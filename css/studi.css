@@ -46,3 +46,14 @@ ol.ptj-langkah small { display: block; color: var(--sub); font-size: 13px; }
 
 /* 溝通任務 diacak: pemetaan huruf di penjelasan */
 .urut-asli { margin-top: 8px; font-size: 13px; color: var(--sub); }
+
+/* Tahap bab berurutan: tanda selesai / terkunci / belum dikerjakan (oranye lembut, bukan merah) */
+nav.steps .step { position: relative; }
+nav.steps .step.lulus::after { content: "✓"; position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: 800; color: var(--ok); }
+nav.steps .step.kunci { opacity: .45; }
+nav.steps .step.kunci::after { content: "🔒"; position: absolute; top: 1px; right: 2px; font-size: 10px; }
+.stage-dialog .msg.belum .bubble { box-shadow: inset 0 0 0 2px var(--warn); }
+.stage-vocab .dots i.belum { background: var(--warn); opacity: .8; }
+.stage-vocab .vcell.belum { box-shadow: inset 0 0 0 2px var(--warn); }
+.stage-grammar .gcheck.belum, .stage-grammar .glat-q.belum { box-shadow: inset 3px 0 0 var(--warn); padding-left: 10px; }
+.syarat { margin: 16px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--text); font-size: 14px; display: flex; gap: 8px; align-items: flex-start; }

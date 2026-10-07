@@ -321,5 +321,13 @@ window.VI_UI = {
 "Tests and questionnaires <b>cannot be repeated</b>. Answer honestly and on your own.": "Bài kiểm tra và bảng hỏi <b>không làm lại được</b>. Hãy trả lời trung thực bằng khả năng của mình.",
 "Your results are sent to the researcher automatically (internet needed). When you finish, you may continue to the next level, but it is optional.": "Kết quả tự động gửi cho người nghiên cứu (cần internet). Khi xong, bạn có thể học tiếp cấp độ tiếp theo, nhưng không bắt buộc.",
 "Questions? Contact the researcher:": "Thắc mắc? Liên hệ người nghiên cứu:",
-"The order of the choices was shuffled. Letters in the explanation refer to the original order:": "Thứ tự các lựa chọn đã được xáo trộn. Các chữ cái trong phần giải thích theo thứ tự ban đầu:"
+"The order of the choices was shuffled. Letters in the explanation refer to the original order:": "Thứ tự các lựa chọn đã được xáo trộn. Các chữ cái trong phần giải thích theo thứ tự ban đầu:",
+"Listen to every line first (tap ▶ Play or 🔊). Still to listen: {0} of {1} lines — marked in orange.": "Hãy nghe từng câu trước (bấm ▶ Phát hoặc 🔊). Chưa nghe: {0} trên {1} câu — có viền cam.",
+"Open every word card once (use › to move). Still to open: {0} of {1} cards — the orange dots.": "Mở mỗi thẻ từ một lần (dùng nút ›). Chưa mở: {0} trên {1} thẻ — các chấm màu cam.",
+"Answer every question once. Your score does not need to be perfect.": "Trả lời mỗi câu hỏi một lần. Điểm không cần phải hoàn hảo.",
+"Answer the quick checks and the practice questions — right or wrong does not matter. Still open: {0} of {1}.": "Trả lời phần kiểm tra nhanh và bài luyện tập — đúng hay sai đều không sao. Chưa trả lời: {0} trên {1}.",
+"Finish the earlier stages first — this one opens after that.": "Hãy hoàn thành các bước trước — bước này sẽ mở sau đó.",
+"Almost there 🙂 ": "Sắp xong rồi 🙂 ",
+"This stage opens after you finish the earlier ones.": "Bước này mở sau khi bạn hoàn thành các bước trước.",
+"The stages open one by one. When you finish this unit, all stages stay open and you can repeat anything as often as you like.": "Các bước mở lần lượt từng bước. Khi bạn hoàn thành bài này, tất cả các bước đều mở và bạn có thể ôn lại bao nhiêu lần tùy thích."
 };
