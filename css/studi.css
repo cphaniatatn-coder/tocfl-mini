@@ -1,3 +1,14 @@
+/* 全字庫正楷體 (TW-Kai) — bentuk huruf standar 教育部 untuk HP yang tidak punya 標楷體.
+   File dibuat _kerja/buat_mini.py (hanya huruf yang dipakai modul). Urutan: 標楷體 lokal → TW-Kai → cadangan lama. */
+@font-face {
+  font-family: 'KaiMini';
+  src: url('../fonts/twkai-mini.woff2') format('woff2');
+  font-display: swap;
+  size-adjust: 110%;
+  unicode-range: U+02C7, U+02C9-02CB, U+02D9, U+2E80-2FDF, U+3000-303F, U+3100-312F, U+31A0-31BF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF, U+20000-2FA1F;
+}
+:root { --kai: 'KaiLocal', 'KaiMini', 'KaiWeb', 'DFKai-SB', 'BiauKai', serif; }
+
 /* Tambahan tampilan modul mini (alur uji coba). */
 .step-card.st-lock { opacity: .55; }
 .step-card.st-cur { outline: 2px solid var(--pri); }

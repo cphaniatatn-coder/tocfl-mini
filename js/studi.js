@@ -155,7 +155,7 @@ const Studi = {
         <div class="continue-txt"><small>${T('Results', 'Hasil')}</small><b>${L === 7 ? T('Finished — thank you!', 'Selesai — terima kasih!') : T('Sending status', 'Status pengiriman')}</b>
         <span>${s.terkirim ? `${T('Last sent', 'Terakhir terkirim')}: ${new Date(s.terkirim).toLocaleString(Lang.LOCALE)}` : T('Not sent yet', 'Belum terkirim')}</span></div><span class="chev">›</span></button>` : ''}
       ${this.lanjutHTML()}
-      <p class="credit">${T('Illustrations: Twemoji © Twitter/X &amp; contributors, licensed CC-BY 4.0. Black-and-white question images: OpenMoji (openmoji.org), licensed CC BY-SA 4.0.', 'Ilustrasi: Twemoji © Twitter/X &amp; kontributor, lisensi CC-BY 4.0. Gambar soal hitam-putih: OpenMoji (openmoji.org), lisensi CC BY-SA 4.0.')}</p>`);
+      <p class="credit">${T('Illustrations: Twemoji © Twitter/X &amp; contributors, licensed CC-BY 4.0. Black-and-white question images: OpenMoji (openmoji.org), licensed CC BY-SA 4.0. Kai font: 全字庫正楷體 (TW-Kai), National Development Council, Open Government Data License v1.0.', 'Ilustrasi: Twemoji © Twitter/X &amp; kontributor, lisensi CC-BY 4.0. Gambar soal hitam-putih: OpenMoji (openmoji.org), lisensi CC BY-SA 4.0. Huruf kai: 全字庫正楷體 (TW-Kai), 國家發展委員會, 政府資料開放授權條款 第1版.')}</p>`);
   },
 
   /* ===== 1. Data diri & level ===== */
