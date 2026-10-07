@@ -287,7 +287,8 @@ const Studi = {
   /* ===== Tes awal / akhir (mesin Ujian) ===== */
   startTes(f) {
     if (!this.admin() && ((f === 'pre' && this.langkah() !== 2) || (f === 'post' && this.langkah() !== 5))) return App.go('#/');
-    const paket = f === 'pre' ? 'A' : 'B', lv = this.get().level;
+    if (!this.get().urutTes) this.set({ urutTes: Math.random() < 0.5 ? 'AB' : 'BA' });   // counterbalancing paket tes
+    const paket = this.get().urutTes[f === 'pre' ? 0 : 1], lv = this.get().level;
     const items = this.data.tes[lv][paket].map(t => ({ t, code: '' }));
     clearInterval(Ujian.timer);
     Soal.plays = {}; Soal.limit = Ujian.PLAY_LIMIT;
@@ -346,7 +347,7 @@ const Studi = {
     };
     return {
       v: 'mini1', uid: this.kode(), uid_asal: this.uid(), putaran: this.putaran(), nama: s.profil?.nama || '', lang: s.lang || LANG, level: s.level || '',
-      level_awal: s.arsip?.[0]?.level || s.level || '', email: s.profil?.email || '',
+      level_awal: s.arsip?.[0]?.level || s.level || '', urutan_tes: s.urutTes || '', email: s.profil?.email || '',
       posisi: s.posisi ? `${s.posisi.kode} · ${s.posisi.tahap}/6` : '', aktif: s.posisi?.waktu || null,
       profil: s.profil ? Object.fromEntries(Object.entries(this.PILIHAN()).map(([k, o]) => [k, o[s.profil[k]] ?? ''])) : {},
       mulai: s.mulai || null, selesai: s.selesai || null, waktu: new Date().toISOString(),
@@ -358,7 +359,7 @@ const Studi = {
         return { kode: m.code, tahap: (p.stage || 0) + 1, selesai: !!p.done, selesai_waktu: p.doneAt || null,
                  tugas_best: p.tasks?.best ?? '', tugas_kali: p.tasks?.tries ?? '', tes_best: p.tes?.best ?? '', tes_kali: p.tes?.tries ?? '',
                  kata_hafal: Object.values(p.known || {}).filter(Boolean).length, yakin: (p.cando || []).filter(x => x === 2).length,
-                 target: p.goal || '', sulit: p.diff || '' };
+                 target: p.goal || '', sulit: p.diff || '', detik: p.detik || 0 };
       }),
     };
   },
@@ -419,7 +420,9 @@ const Studi = {
           T('Use <b>the same phone and the same browser</b> from start to finish. Your progress is saved on that phone.', 'Pakai <b>satu HP dan satu browser yang sama</b> dari awal sampai akhir. Progresmu tersimpan di HP itu.'),
           T('<b>Do not clear your browser history</b> until you finish, and do not use Incognito/Private mode.', '<b>Jangan hapus riwayat browser</b> sampai selesai, dan jangan pakai mode Incognito/Private.'),
           T('Enter your <b>real name or initials</b> and an <b>active email address</b>.', 'Tulis <b>nama atau inisial asli</b> dan <b>email aktif</b> yang benar.'),
-          T('Have <b>earphones</b> ready for the listening questions.', 'Siapkan <b>earphone</b>, karena ada soal mendengarkan.')])}</ul></div>
+          T('Have <b>earphones</b> ready for the listening questions.', 'Siapkan <b>earphone</b>, karena ada soal mendengarkan.'),
+          T('Finish within <b>7 days</b> (by <b>14 October</b> at the latest). About one unit a day is enough.', 'Selesaikan dalam <b>7 hari</b> (paling lambat <b>14 Oktober</b>). Kira-kira satu bab per hari sudah cukup.'),
+          T('<b>iPhone users:</b> open the module at least every few days. If Safari does not open it for 7 days, your progress may be deleted.', '<b>Pengguna iPhone:</b> buka modul paling tidak setiap beberapa hari. Jika tidak dibuka di Safari selama 7 hari, progresmu bisa terhapus.')])}</ul></div>
       <div class="panel"><div class="panel-k">${Pic.html('🧭', 'ic-sm')} ${T('Steps', 'Urutan langkah')}</div>
         <ol class="ptj-langkah">${langkah.map(([j, n, w, tes]) => `<li class="${tes ? 'tes' : ''}"><span><b>${j}</b>${n ? `<small>${n}</small>` : ''}</span><span class="ptj-w">${w}</span></li>`).join('')}</ol></div>
       <div class="panel ptj-aturan"><div class="panel-k">${Pic.html('⚠️', 'ic-sm')} ${T('During the pre-test and post-test', 'Saat tes awal dan tes akhir')}</div>
@@ -458,6 +461,14 @@ Modul.finish = function () {
   App.go('#/');
 };
 App.renderHome = () => Studi.renderHome();
+// Lama belajar per bab: +15 detik setiap 15 detik selama bab terbuka, layar terlihat, dan ada sentuhan/gulir/audio dalam 3 menit terakhir
+let _aktif = Date.now();
+['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(e => addEventListener(e, () => { _aktif = Date.now(); }, { passive: true }));
+setInterval(() => {
+  const m = location.hash.match(/^#\/m\/([A-Z]\d+)/);
+  if (!m || document.hidden || Studi.admin() || Date.now() - _aktif > 180000) return;
+  App.setP(m[1], { detik: (App.getP(m[1]).detik || 0) + 15 });
+}, 15000);
 // Progres di dalam bab ikut terkirim: setiap kali peserta mencapai tahap BARU (bukan sekadar bolak-balik),
 // posisi terakhir dicatat & dikirim (ditunda 3 detik supaya pindah tahap cepat-cepat hanya terkirim sekali).
 const _modOpen = Modul.open;
@@ -548,6 +559,7 @@ const Tahap = {
 // Dialog: kalimat dihitung "sudah didengar" begitu diputar (▶ Putar, Baris berikutnya, atau 🔊) — juga bila audionya gagal
 const _speechLines = Speech.lines;
 Speech.lines = function (lines) {
+  _aktif = Date.now();
   try {
     if (location.hash.startsWith('#/m/') && Modul.m && Modul.key() === 'dialog') {
       const p = App.getP(Modul.m.code), d = Object.assign({}, p.dengar || {});

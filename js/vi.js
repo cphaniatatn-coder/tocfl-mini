@@ -329,5 +329,7 @@ window.VI_UI = {
 "Finish the earlier stages first — this one opens after that.": "Hãy hoàn thành các bước trước — bước này sẽ mở sau đó.",
 "Almost there 🙂 ": "Sắp xong rồi 🙂 ",
 "This stage opens after you finish the earlier ones.": "Bước này mở sau khi bạn hoàn thành các bước trước.",
-"The stages open one by one. When you finish this unit, all stages stay open and you can repeat anything as often as you like.": "Các bước mở lần lượt từng bước. Khi bạn hoàn thành bài này, tất cả các bước đều mở và bạn có thể ôn lại bao nhiêu lần tùy thích."
+"The stages open one by one. When you finish this unit, all stages stay open and you can repeat anything as often as you like.": "Các bước mở lần lượt từng bước. Khi bạn hoàn thành bài này, tất cả các bước đều mở và bạn có thể ôn lại bao nhiêu lần tùy thích.",
+"Finish within <b>7 days</b> (by <b>14 October</b> at the latest). About one unit a day is enough.": "Hoàn thành trong <b>7 ngày</b> (chậm nhất ngày <b>14 tháng 10</b>). Khoảng một bài mỗi ngày là đủ.",
+"<b>iPhone users:</b> open the module at least every few days. If Safari does not open it for 7 days, your progress may be deleted.": "<b>Người dùng iPhone:</b> hãy mở học phần ít nhất vài ngày một lần. Nếu không mở trên Safari trong 7 ngày, tiến độ của bạn có thể bị xóa."
 };
