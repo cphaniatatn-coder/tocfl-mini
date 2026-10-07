@@ -289,7 +289,15 @@ const Studi = {
     if (!this.admin() && ((f === 'pre' && this.langkah() !== 2) || (f === 'post' && this.langkah() !== 5))) return App.go('#/');
     if (!this.get().urutTes) this.set({ urutTes: Math.random() < 0.5 ? 'AB' : 'BA' });   // counterbalancing paket tes
     const paket = this.get().urutTes[f === 'pre' ? 0 : 1], lv = this.get().level;
-    const items = this.data.tes[lv][paket].map(t => ({ t, code: '' }));
+    // Kunci jawaban di data kebanyakan A → urutan pilihan diacak setiap tes dibuka. Kecuali listen_pic (audio membacakan "A，…").
+    // t._p = urutan asli, supaya jawaban tetap dicatat dengan huruf ASLI (kolom j di Sheet tetap sebanding).
+    const acak = t => {
+      if (t.type === 'listen_pic' || !Array.isArray(t.options) || t.options.length < 2) return t;
+      const p = acakUrut(t.options.length), o = { ...t, options: p.map(j => t.options[j]), _p: p };
+      if (t.type === 'cloze') o.answers = t.answers.map(a => p.indexOf(a)); else o.answer = p.indexOf(t.answer);
+      return o;
+    };
+    const items = this.data.tes[lv][paket].map(t => ({ t: acak(t), code: '' }));
     clearInterval(Ujian.timer);
     Soal.plays = {}; Soal.limit = Ujian.PLAY_LIMIT;
     Ujian.session = { kind: f, vol: 0, items, i: 0, answers: {}, intro: {}, phase: 'q', dur: 30 * 60, end: null, grid: false,
@@ -654,8 +662,9 @@ Ujian.finish = function () {
   s.items.forEach((x, i) => {
     const a = s.answers['u' + i], [g, n] = Soal.score(x.t, a), p = per[this.partOf(x.t)];
     p[0] += g; p[1] += n;
-    if (x.t.type === 'cloze') x.t.answers.forEach((k, j) => butir.push({ no: x.t.no + j, jawab: a?.vals?.[j] != null ? 'ABCDEF'[a.vals[j]] : '', benar: a?.vals?.[j] === k ? 1 : 0 }));
-    else butir.push({ no: x.t.no, jawab: a != null ? 'ABCDEF'[a] : '', benar: a === x.t.answer ? 1 : 0 });
+    const huruf = v => 'ABCDEF'[x.t._p ? x.t._p[v] : v];   // kembali ke huruf urutan asli
+    if (x.t.type === 'cloze') x.t.answers.forEach((k, j) => butir.push({ no: x.t.no + j, jawab: a?.vals?.[j] != null ? huruf(a.vals[j]) : '', benar: a?.vals?.[j] === k ? 1 : 0 }));
+    else butir.push({ no: x.t.no, jawab: a != null ? huruf(a) : '', benar: a === x.t.answer ? 1 : 0 });
   });
   const sum = arr => arr.reduce((a, [g, n]) => [a[0] + g, a[1] + n], [0, 0]), pc = ([g, n]) => n ? Math.round(g / n * 100) : 0;
   s.per = per; s.pct = pc(sum(per)); s.l = pc(sum(per.slice(0, 4))); s.r = pc(sum(per.slice(4)));
