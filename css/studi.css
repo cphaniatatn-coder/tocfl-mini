@@ -43,3 +43,6 @@ ol.ptj-langkah li.tes::before { background: var(--pri); color: var(--surface); }
 ol.ptj-langkah small { display: block; color: var(--sub); font-size: 13px; }
 .ptj-w { color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ptj-aturan { background: var(--warn-bg); }
+
+/* 溝通任務 diacak: pemetaan huruf di penjelasan */
+.urut-asli { margin-top: 8px; font-size: 13px; color: var(--sub); }

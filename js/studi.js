@@ -470,6 +470,38 @@ Modul.open = function (code, stage) {
   clearTimeout(Studi._tunda); Studi._tunda = setTimeout(() => Studi.kirimDiam(), 3000);
 };
 
+/* ===== 溝通任務: urutan pilihan A/B/C diacak setiap kali "Coba lagi" =====
+   Percobaan pertama memakai urutan asli. Acakan disimpan per bab (di memori) dan dipasang ulang setiap render,
+   karena Modul.open selalu memuat data asli. cloze tidak diacak (pilihannya dipakai bersama beberapa titik kosong).
+   Audio 聽力 Part 1 ("A，…" "B，…") untuk semua kombinasi huruf × pilihan direkam oleh buat_audio.py. */
+const acakUrut = n => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const bisaAcak = t => Array.isArray(t.options) && t.options.length > 1 && typeof t.answer === 'number' && t.type !== 'cloze';
+Modul._acak = {};
+const _modRender = Modul.render, _modRetry = Modul.retry;
+Modul.render = function () {
+  const perm = this._acak[this.m.code];
+  if (perm && this.m._perm !== perm) {
+    const asli = App.findModule(this.m.code).m;
+    this.m = Object.assign({}, asli, { _perm: perm, tasks: asli.tasks.map((t, i) => {
+      const p = perm[i];
+      if (!p || p.every((x, k) => x === k)) return t;
+      return Object.assign({}, t, { options: p.map(j => t.options[j]), answer: p.indexOf(t.answer), urutAsli: t.options });
+    }) });
+  }
+  return _modRender.call(this);
+};
+Modul.retry = function () {
+  const asli = App.findModule(this.m.code).m, lama = this._acak[asli.code] || [];
+  this._acak[asli.code] = asli.tasks.map((t, i) => {
+    if (!bisaAcak(t)) return null;
+    let p = acakUrut(t.options.length);
+    const kini = (lama[i] || [...Array(t.options.length).keys()]).join();   // urutan yang sedang tampil
+    for (let k = 0; k < 20 && p.join() === kini; k++) p = acakUrut(t.options.length);
+    return p;
+  });
+  return _modRetry.call(this);
+};
+
 // Tes awal/akhir memakai mesin Ujian; paragraf Part 4 bernomor per titik kosong seperti naskah
 Ujian.w = function (t) { const k = this.session.kind; return (this.session.full || k === 'pre' || k === 'post') && t.type === 'cloze' ? t.answers.length : 1; };
 const _finish = Ujian.finish, _result = Ujian.result;
@@ -567,7 +599,11 @@ Soal.play = function (key) {
                    n => kecil(T(`playing ${n}/2`, `diputar ${n}/2`)));
 };
 Soal.body = function (t, key, a, ns, mode) {
-  const h = _soalBody.call(this, t, key, a, ns, mode);
+  let h = _soalBody.call(this, t, key, a, ns, mode);
+  if (t.urutAsli && /(^|[^A-Za-z0-9])[A-D]([^A-Za-z0-9]|$)/.test(t.why || '')) {
+    const lbl = o => typeof o === 'string' ? o : (o.label || o.icon || '');
+    h = h.replace(/(<div class="feedback[^"]*">[\s\S]*?<p>[\s\S]*?<\/p>)/, `$1<p class="urut-asli">${T('The order of the choices was shuffled. Letters in the explanation refer to the original order:', 'Urutan pilihan diacak. Huruf di penjelasan mengikuti urutan asli:')} ${t.urutAsli.map((o, i) => `<b>${'ABCD'[i]}</b> <span lang="zh-TW">${esc(lbl(o))}</span>`).join(' · ')}</p>`);
+  }
   return tocflAktif() && mode === 'exam' && this.isListen(t) ? h.replace(/<div class="q-ask" lang="zh-TW">問：[^<]*<\/div>/, '') : h;
 };
 Speech.speedUI = function () { return tocflAktif() ? '' : _speedUI.call(this); };
