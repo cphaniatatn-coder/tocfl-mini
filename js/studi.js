@@ -428,7 +428,7 @@ const Studi = {
           T('The audio button can be pressed <b>once</b>; the audio then plays <b>twice automatically</b>.', 'Tombol audio hanya bisa ditekan <b>sekali</b>, lalu audio diputar <b>2× otomatis</b>.'),
           T('Tests and questionnaires <b>cannot be repeated</b>. Answer honestly and on your own.', 'Tes dan kuesioner <b>tidak bisa diulang</b>. Jawablah dengan jujur dan dengan kemampuanmu sendiri.')])}</ul></div>
       <p class="hint">${T('Your results are sent to the researcher automatically (internet needed). When you finish, you may continue to the next level, but it is optional.', 'Hasilmu terkirim otomatis ke peneliti (butuh internet). Setelah selesai, kamu boleh lanjut ke level berikutnya, tapi tidak wajib.')}</p>
-      <p class="hint">${T('Questions? Contact the researcher:', 'Ada pertanyaan? Hubungi peneliti:')} <b style="user-select: all; overflow-wrap: anywhere;">chaliyip@gmail.com</b></p>
+      <p class="hint">${T('Questions? Contact the researcher:', 'Ada pertanyaan? Hubungi peneliti:')}<br><b><span lang="zh-TW">葉查理</span> CARLI PHANIATATN</b> · <b style="user-select: all; overflow-wrap: anywhere;">chaliyip@gmail.com</b></p>
       <button class="btn primary block" onclick="App.go('${this._dari || '#/'}')">${T('Got it', 'Mengerti')} ✓</button>`);
   },
 
