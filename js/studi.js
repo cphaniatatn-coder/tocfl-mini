@@ -776,7 +776,7 @@ App.route = async function () {
     Speech.stop();
     if (p[1] === 'profil') return Studi.renderProfil();
     if (p[1] === 'skala') return Studi.renderSkala(p[2]);
-    if (p[1] === 'tes') return Studi.startTes(p[2]);
+    if (p[1] === 'tes') { if (await Pembaruan.cek()) return Pembaruan.muat(); return Studi.startTes(p[2]); }
     if (p[1] === 'eval') return Studi.renderEval();
     return App.go('#/');
   }
@@ -787,6 +787,38 @@ App.route = async function () {
   if (p[0] === 'v' && p[2] !== 'kata') return App.go('#/');
   return _route.call(this);
 };
+
+/* ===== Pembaruan otomatis =====
+   Versi = semua ?v= di index.html + DATA_V (diisi buat_mini.py). Dicek hanya di saat aman: sebelum tes dimulai,
+   dan saat kembali ke aplikasi di beranda — tidak pernah di tengah tes/bab. Memuat ulang lewat ?u=<versi> supaya
+   cache GitHub Pages (10 menit) terlewati; sessionStorage mencegah muat ulang berulang ke versi yang sama. */
+const Pembaruan = {
+  baru: null, terakhir: 0,
+  versi: html => [...html.matchAll(/(?:src|href)="([^"]+\?v=[^"]+)"/g)].map(m => m[1]).concat(html.match(/DATA_V = '([^']*)'/)?.[1] || '').join('|'),
+  sekarang() { return [...document.querySelectorAll('script[src*="?v="],link[href*="?v="]')].map(e => e.getAttribute('src') || e.getAttribute('href')).concat(window.DATA_V || '').join('|'); },
+  async cek() {
+    if (Date.now() - this.terakhir < 60000) return !!this.baru;
+    this.terakhir = Date.now();
+    try {
+      const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 4000);
+      const html = await (await fetch(`${location.pathname}?nc=${Date.now()}`, { cache: 'no-store', signal: ctl.signal })).text();
+      clearTimeout(tm);
+      const v = this.versi(html);
+      let dicoba = ''; try { dicoba = sessionStorage.getItem('pembaruan') || ''; } catch { /* */ }
+      this.baru = v.includes('studi.js?v=') && v !== this.sekarang() && v !== dicoba ? v : null;
+    } catch { this.baru = null; }   // offline / lambat: lanjut dengan versi sekarang
+    return !!this.baru;
+  },
+  muat() {
+    try { sessionStorage.setItem('pembaruan', this.baru); } catch { /* */ }
+    let h = 0; for (const c of this.baru) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    location.replace(`${location.pathname}?u=${h.toString(36)}${location.hash}`);
+  },
+};
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden || !/^(#\/?)?$/.test(location.hash)) return;
+  if (await Pembaruan.cek() && /^(#\/?)?$/.test(location.hash)) Pembaruan.muat();
+});
 
 // Versi Vietnam: nama & petunjuk bagian ujian dan strategi refleksi ditulis di luar T() di app utama
 if (LANG === 'vi') {
