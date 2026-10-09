@@ -769,7 +769,7 @@ const pisahWhy = why => {
   const potong = [];
   for (const m of why.matchAll(/(?<![\p{L}\p{N}])[A-D](?:(?:,| dan| and| và| &) [A-D])*(?![\p{L}\p{N}])/gu)) {
     const sebelum = why.slice(0, m.index), sesudah = why.slice(m.index + m[0].length);
-    if (!/(^|[.;,!?。；—])\s*$/.test(sebelum) || !/^(\s|:|=)/.test(sesudah)) continue;
+    if (!/(^|[.;,!?。；！？—])\s*$/.test(sebelum) || !/^(\s|:|=)/.test(sesudah)) continue;
     if (artikelA(m[0], sesudah)) continue;
     potong.push([m.index, m[0]]);
   }
