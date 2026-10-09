@@ -183,11 +183,13 @@ const Pic = {
   },
 
   /* Avatar pembicara — memberi 'wajah' pada suara (dual-coding), konsisten di seluruh modul */
+  // Varian kulit terang (🏻) berambut hitam: rambut pendek / panjang / kumis / jenggot terlihat jelas walau avatar kecil
+  // (varian kuning bawaan twemoji semuanya berambut oranye sehingga 🧑 dan 👩 tampak sama di HP).
   AVATAR: {
-    '王大文': '🧑', '李美美': '👩', '安妮': '👧', '志明': '👨', '陳老師': '👩‍🏫', '陳先生': '👨‍💼', '王先生': '👨‍💼',
-    '先生': '👨‍💼', '小姐': '👩‍💼', '店員': '👩‍💼', '老闆': '🧔', '老闆娘': '👩‍🦱', '醫生': '🧑‍⚕️', '護士': '👩‍⚕️',
-    '媽媽': '👩‍🦳', '美美的媽媽': '👩‍🦳', '房東': '🧓', '陳安安': '🧑‍🎓', '小明': '👦', '安妮的弟弟': '👦',
-    '司機': '🧑‍✈️', '男': '👨', '女': '👩',
+    '王大文': '🧑🏻', '李美美': '👩🏻', '安妮': '👧🏽', '志明': '👨🏻', '陳老師': '👩🏻‍🏫', '陳先生': '👨🏻‍💼', '王先生': '👨🏻‍💼',
+    '先生': '👨🏻‍💼', '小姐': '👩🏻‍💼', '店員': '👩🏻‍💼', '老闆': '🧔🏻', '老闆娘': '👩🏻‍🦱', '醫生': '🧑🏻‍⚕️', '護士': '👩🏻‍⚕️',
+    '媽媽': '👩‍🦳', '美美的媽媽': '👩‍🦳', '房東': '🧓', '陳安安': '🧑🏻‍🎓', '小明': '👦🏻', '安妮的弟弟': '👦🏻',
+    '司機': '🧑🏻‍✈️', '男': '👨🏻', '女': '👩🏻',
   },
   avatar(sp) { return this.html(this.AVATAR[sp] || '🧑', 'avatar'); },
 
