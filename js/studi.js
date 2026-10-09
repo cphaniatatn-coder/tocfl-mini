@@ -495,6 +495,18 @@ Modul.open = function (code, stage) {
    Audio 聽力 Part 1 ("A，…" "B，…") untuk semua kombinasi huruf × pilihan direkam oleh buat_audio.py. */
 const acakUrut = n => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const bisaAcak = t => Array.isArray(t.options) && t.options.length > 1 && typeof t.answer === 'number' && t.type !== 'cloze';
+// Huruf pilihan di penjelasan ("B salah jumlah") ikut diganti ke urutan yang sedang tampil, jadi peserta tidak perlu
+// mencocokkan dengan urutan asli. Dikecualikan: rumus pola (A 比 B, A 跟 B) dan kata sandang "A" bahasa Inggris (A house…).
+const hurufBaru = (why, p) => {
+  if (!why || /[A-D] ?[比跟]/.test(why)) return why;
+  return why.replace(/(^|[^\p{L}\p{N}])([A-D])(?![\p{L}\p{N}])/gu, (s, pre, h, i) => {
+    if (LANG === 'en' && h === 'A' && /^ (?!is |are |and |has |does |do |misreads |judges |comments )[a-z'‘]/.test(why.slice(i + s.length))) return s;
+    return pre + 'ABCD'[p.indexOf('ABCD'.indexOf(h))];
+  }).replace(/(?<![\p{L}\p{N}])[A-D](?:(?:,| dan| and| và| &) [A-D])+(?![\p{L}\p{N}])/gu, s => {   // "C dan A" → "A dan C"
+    const urut = s.match(/[A-D]/g).sort();
+    return s.replace(/[A-D]/g, () => urut.shift());
+  });
+};
 Modul._acak = {};
 const _modRender = Modul.render, _modRetry = Modul.retry;
 Modul.render = function () {
@@ -504,7 +516,7 @@ Modul.render = function () {
     this.m = Object.assign({}, asli, { _perm: perm, tasks: asli.tasks.map((t, i) => {
       const p = perm[i];
       if (!p || p.every((x, k) => x === k)) return t;
-      return Object.assign({}, t, { options: p.map(j => t.options[j]), answer: p.indexOf(t.answer), urutAsli: t.options });
+      return Object.assign({}, t, { options: p.map(j => t.options[j]), answer: p.indexOf(t.answer), why: hurufBaru(t.why, p) });
     }) });
   }
   return _modRender.call(this);
@@ -750,10 +762,6 @@ Soal.play = function (key) {
 };
 Soal.body = function (t, key, a, ns, mode) {
   let h = _soalBody.call(this, t, key, a, ns, mode);
-  if (t.urutAsli && /(^|[^A-Za-z0-9])[A-D]([^A-Za-z0-9]|$)/.test(t.why || '')) {
-    const lbl = o => typeof o === 'string' ? o : (o.label || o.icon || '');
-    h = h.replace(/(<div class="feedback[^"]*">[\s\S]*?<p>[\s\S]*?<\/p>)/, `$1<p class="urut-asli">${T('The order of the choices was shuffled. Letters in the explanation refer to the original order:', 'Urutan pilihan diacak. Huruf di penjelasan mengikuti urutan asli:')} ${t.urutAsli.map((o, i) => `<b>${'ABCD'[i]}</b> <span lang="zh-TW">${esc(lbl(o))}</span>`).join(' · ')}</p>`);
-  }
   return tocflAktif() && mode === 'exam' && this.isListen(t) ? h.replace(/<div class="q-ask" lang="zh-TW">問：[^<]*<\/div>/, '') : h;
 };
 Speech.speedUI = function () { return tocflAktif() ? '' : _speedUI.call(this); };
