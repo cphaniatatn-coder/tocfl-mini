@@ -55,6 +55,12 @@ ol.ptj-langkah small { display: block; color: var(--sub); font-size: 13px; }
 .ptj-w { color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ptj-aturan { background: var(--warn-bg); }
 
+/* 溝通任務: penjelasan per pilihan */
+.why-list { list-style: none; margin: 6px 0 0; padding: 0; font-size: 14.5px; }
+.why-list li { padding: 6px 0; border-top: 1px solid var(--line); }
+.why-list li:first-child { border-top: 0; }
+.why-list li.ok > div { font-weight: 700; color: var(--ok); }
+.why-list small { display: block; color: var(--sub); font-size: 13.5px; margin-top: 2px; }
 
 /* Tahap bab berurutan: tanda selesai / terkunci / belum dikerjakan (oranye lembut, bukan merah) */
 nav.steps .step { position: relative; }
