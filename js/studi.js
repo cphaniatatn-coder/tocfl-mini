@@ -518,7 +518,7 @@ Modul.render = function () {
     this.m = Object.assign({}, asli, { _perm: perm, tasks: asli.tasks.map((t, i) => {
       const p = perm[i];
       if (!p || p.every((x, k) => x === k)) return t;
-      return Object.assign({}, t, { options: p.map(j => t.options[j]), answer: p.indexOf(t.answer), why: hurufBaru(t.why, p) });
+      return Object.assign({}, t, { options: p.map(j => t.options[j]), answer: p.indexOf(t.answer), why: hurufBaru(t.why, p), whyAsli: t.why, perm: p });
     }) });
   }
   return _modRender.call(this);
@@ -784,7 +784,14 @@ const pisahWhy = why => {
 };
 Soal.body = function (t, key, a, ns, mode) {
   let h = _soalBody.call(this, t, key, a, ns, mode);
-  const w = ns === 'Modul' && Array.isArray(t.options) && t.type !== 'cloze' && h.includes('<div class="feedback') && t.why && (pisahWhy(t.why) || { umum: t.why, per: {} });   // tanpa huruf → seluruh penjelasan di bawah jawaban benar
+  let w = ns === 'Modul' && Array.isArray(t.options) && t.type !== 'cloze' && h.includes('<div class="feedback') && t.why
+    && (pisahWhy(t.whyAsli || t.why) || { umum: t.whyAsli || t.why, per: {} });   // tanpa huruf → seluruh penjelasan di bawah jawaban benar
+  // pilihan diacak: pecah dari teks ASLI (kata sandang "A" bahasa Inggris dikenali di urutan asli), baru hurufnya dipindah
+  if (w && t.perm) {
+    const per = {};
+    for (const [L, s] of Object.entries(w.per)) per['ABCD'[t.perm.indexOf('ABCD'.indexOf(L))]] = hurufBaru(s, t.perm);
+    w = { umum: hurufBaru(w.umum, t.perm), per };
+  }
   if (w) h = h.replace(`<p>${esc(t.why)}</p>`, () => `<ol class="why-list">${t.options.map((o, i) => {
     const L = 'ABCD'[i], ok = i === t.answer, alasan = ok ? w.umum || w.per[L] : w.per[L];
     const lbl = typeof o === 'string' ? `<span lang="zh-TW">${esc(o)}</span>` : esc(o.label || '');
